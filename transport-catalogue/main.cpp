@@ -9,6 +9,6 @@ int main() {
 
 	transport_catalogue::TransportCatalogue cat;
 	transport_catalogue::input_reader::ReadLines(cat, cin);
-	transport_catalogue::stat_reader::ReadQuery(cat, cin);
+	transport_catalogue::stat_reader::ReadQuery(cat, cin, cout);
 
 }

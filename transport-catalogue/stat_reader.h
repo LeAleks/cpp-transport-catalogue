@@ -11,7 +11,7 @@ namespace transport_catalogue {
 namespace stat_reader{
 
 // Считывание входного потока для возврата запрашиваемой информации
-void ReadQuery(TransportCatalogue& catalog, std::istream& in);
+void ReadQuery(TransportCatalogue& catalog, std::istream& in, std::ostream& out);
 
 } // Конец stat_reader
 

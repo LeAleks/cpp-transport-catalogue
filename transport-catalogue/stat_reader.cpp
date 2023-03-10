@@ -1,4 +1,5 @@
 ﻿#include "stat_reader.h"
+#include "input_reader.h"
 
 #include <string>
 #include <vector>
@@ -13,21 +14,8 @@ namespace transport_catalogue {
 namespace stat_reader{
 
 namespace detail{
-string ReadLine(istream& in) {
-    string s;
-    getline(in, s);
-    return s;
-}
 
-int ReadLineWithNumber(istream& in) {
-    int result = 0;
-    in >> result;
-    ReadLine(in);
-    return result;
-}
-
-
-void RequestStop(TransportCatalogue& catalog, string_view query) {
+void RequestStop(TransportCatalogue& catalog, string_view query, std::ostream& out) {
     // Удаление префикса "Stop "
     query.remove_prefix(5);
 
@@ -36,32 +24,32 @@ void RequestStop(TransportCatalogue& catalog, string_view query) {
 
     // Если возвращен пустой указатель, то остановка не найдена
     if (info_ptr == nullptr) {
-        cout << "Stop "s << query << ": not found\n";
+        out << "Stop "s << query << ": not found\n";
     }
     // Если возвращеннй массив пустой, то маршрутов нет
     else if ((*info_ptr).empty()) {
-        cout << "Stop "s << query << ": no buses\n";
+        out << "Stop "s << query << ": no buses\n";
     }
     // Вывод маршрутов
     else {
-        cout << "Stop "s << query << ": buses ";
+        out << "Stop "s << query << ": buses ";
         bool is_first = true;
 
         for (auto& i : *info_ptr) {
             if (is_first) {
                 is_first = false;
-                cout << i;
+                out << i;
             }
             else
             {
-                cout << " " << i;
+                out << " " << i;
             }
         }
-        cout << endl;
+        out << endl;
     }
 }
 
-void RequestBus(TransportCatalogue& catalog, string_view query) {
+void RequestBus(TransportCatalogue& catalog, string_view query, std::ostream& out) {
     // Удаление префикса "Bus "
     query.remove_prefix(4);
 
@@ -70,10 +58,10 @@ void RequestBus(TransportCatalogue& catalog, string_view query) {
 
     // Если пришли нулевые значения, то маршрут не найден
     if (number_of_stops_on_route == 0) {
-        cout << "Bus "s << bus_name << ": not found\n"s;
+        out << "Bus "s << bus_name << ": not found\n"s;
     }
     else {
-        cout << "Bus "s << bus_name << ": "s <<
+        out << "Bus "s << bus_name << ": "s <<
             number_of_stops_on_route << " stops on route, "s <<
             number_unique << " unique stops, "s << 
             lenght << " route length, "s <<
@@ -85,9 +73,9 @@ void RequestBus(TransportCatalogue& catalog, string_view query) {
 
 } // Конец detail
 
-void ReadQuery(TransportCatalogue& catalog, std::istream& in){
+void ReadQuery(TransportCatalogue& catalog, std::istream& in, std::ostream& out){
     // Количество запросов
-    size_t number_of_lines = detail::ReadLineWithNumber(in);
+    size_t number_of_lines = input_reader::detail::ReadLineWithNumber(in);
 
     // Считываем строки по отдельности
     for (size_t i = 0; i < number_of_lines; ++i) {
@@ -99,10 +87,10 @@ void ReadQuery(TransportCatalogue& catalog, std::istream& in){
 
         // Определение типа запроса
         if (line_sv[0] == 'S') {
-            detail::RequestStop(catalog, line_sv);
+            detail::RequestStop(catalog, line_sv, out);
         }
         else {
-            detail::RequestBus(catalog, line_sv);
+            detail::RequestBus(catalog, line_sv, out);
         }
     }
 }
