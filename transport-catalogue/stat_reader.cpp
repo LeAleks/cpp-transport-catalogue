@@ -1,4 +1,4 @@
-#include "stat_reader.h"
+п»ї#include "stat_reader.h"
 
 #include <string>
 #include <vector>
@@ -28,21 +28,21 @@ int ReadLineWithNumber(istream& in) {
 
 
 void RequestStop(TransportCatalogue& catalog, string_view query) {
-    // Удаление префикса "Stop "
+    // РЈРґР°Р»РµРЅРёРµ РїСЂРµС„РёРєСЃР° "Stop "
     query.remove_prefix(5);
 
-    // Возврат информации об остановке
+    // Р’РѕР·РІСЂР°С‚ РёРЅС„РѕСЂРјР°С†РёРё РѕР± РѕСЃС‚Р°РЅРѕРІРєРµ
     auto info_ptr = catalog.FindStop(query);
 
-    // Если возвращен пустой указатель, то остановка не найдена
+    // Р•СЃР»Рё РІРѕР·РІСЂР°С‰РµРЅ РїСѓСЃС‚РѕР№ СѓРєР°Р·Р°С‚РµР»СЊ, С‚Рѕ РѕСЃС‚Р°РЅРѕРІРєР° РЅРµ РЅР°Р№РґРµРЅР°
     if (info_ptr == nullptr) {
         cout << "Stop "s << query << ": not found\n";
     }
-    // Если возвращеннй массив пустой, то маршрутов нет
+    // Р•СЃР»Рё РІРѕР·РІСЂР°С‰РµРЅРЅР№ РјР°СЃСЃРёРІ РїСѓСЃС‚РѕР№, С‚Рѕ РјР°СЂС€СЂСѓС‚РѕРІ РЅРµС‚
     else if ((*info_ptr).empty()) {
         cout << "Stop "s << query << ": no buses\n";
     }
-    // Вывод маршрутов
+    // Р’С‹РІРѕРґ РјР°СЂС€СЂСѓС‚РѕРІ
     else {
         cout << "Stop "s << query << ": buses ";
         bool is_first = true;
@@ -62,13 +62,13 @@ void RequestStop(TransportCatalogue& catalog, string_view query) {
 }
 
 void RequestBus(TransportCatalogue& catalog, string_view query) {
-    // Удаление префикса "Bus "
+    // РЈРґР°Р»РµРЅРёРµ РїСЂРµС„РёРєСЃР° "Bus "
     query.remove_prefix(4);
 
-    // Возврат информации о маршруте
+    // Р’РѕР·РІСЂР°С‚ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РјР°СЂС€СЂСѓС‚Рµ
     auto [bus_name, number_of_stops_on_route, number_unique, lenght, curvature] = catalog.GetBusInfo(query);
 
-    // Если пришли нулевые значения, то маршрут не найден
+    // Р•СЃР»Рё РїСЂРёС€Р»Рё РЅСѓР»РµРІС‹Рµ Р·РЅР°С‡РµРЅРёСЏ, С‚Рѕ РјР°СЂС€СЂСѓС‚ РЅРµ РЅР°Р№РґРµРЅ
     if (number_of_stops_on_route == 0) {
         cout << "Bus "s << bus_name << ": not found\n"s;
     }
@@ -83,21 +83,21 @@ void RequestBus(TransportCatalogue& catalog, string_view query) {
 }
 
 
-} // Конец detail
+} // РљРѕРЅРµС† detail
 
 void ReadQuery(TransportCatalogue& catalog, std::istream& in){
-    // Количество запросов
+    // РљРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїСЂРѕСЃРѕРІ
     size_t number_of_lines = detail::ReadLineWithNumber(in);
 
-    // Считываем строки по отдельности
+    // РЎС‡РёС‚С‹РІР°РµРј СЃС‚СЂРѕРєРё РїРѕ РѕС‚РґРµР»СЊРЅРѕСЃС‚Рё
     for (size_t i = 0; i < number_of_lines; ++i) {
         string line;
         getline(in, line);
 
-        // Перевод стоки в string_view
+        // РџРµСЂРµРІРѕРґ СЃС‚РѕРєРё РІ string_view
         string_view line_sv(line);
 
-        // Определение типа запроса
+        // РћРїСЂРµРґРµР»РµРЅРёРµ С‚РёРїР° Р·Р°РїСЂРѕСЃР°
         if (line_sv[0] == 'S') {
             detail::RequestStop(catalog, line_sv);
         }

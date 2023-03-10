@@ -1,4 +1,4 @@
-// Точка входа в справочник
+﻿// Точка входа в справочник
 
 #include "input_reader.h"
 #include "transport_catalogue.h"

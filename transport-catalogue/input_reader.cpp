@@ -1,4 +1,4 @@
-#include "input_reader.h"
+п»ї#include "input_reader.h"
 
 #include <deque>
 #include <string>
@@ -18,7 +18,7 @@ using namespace std;
 
 namespace detail{
 
-// Узел хранения инфомарции о расстоянии между остановками
+// РЈР·РµР» С…СЂР°РЅРµРЅРёСЏ РёРЅС„РѕРјР°СЂС†РёРё Рѕ СЂР°СЃСЃС‚РѕСЏРЅРёРё РјРµР¶РґСѓ РѕСЃС‚Р°РЅРѕРІРєР°РјРё
 struct StopDistance {
     int distance_;
     string_view stop1_name_;
@@ -38,160 +38,160 @@ int ReadLineWithNumber(istream& in) {
     return result;
 }
 
-// Обрезание пробелов по левому краю
+// РћР±СЂРµР·Р°РЅРёРµ РїСЂРѕР±РµР»РѕРІ РїРѕ Р»РµРІРѕРјСѓ РєСЂР°СЋ
 string_view ltrim(string_view s) {
     size_t start = s.find_first_not_of(' ');
     return (start == string_view::npos) ? "" : s.substr(start);
 }
 
-// Обрезание пробелов по правому краю
+// РћР±СЂРµР·Р°РЅРёРµ РїСЂРѕР±РµР»РѕРІ РїРѕ РїСЂР°РІРѕРјСѓ РєСЂР°СЋ
 string_view rtrim(string_view s) {
     size_t end = s.find_last_not_of(' ');
     return (end == string_view::npos) ? "" : s.substr(0, end + 1);
 }
 
-// Обрезание пробелов по краям строки
+// РћР±СЂРµР·Р°РЅРёРµ РїСЂРѕР±РµР»РѕРІ РїРѕ РєСЂР°СЏРј СЃС‚СЂРѕРєРё
 string_view TrimLine(string_view s) {
     return rtrim(ltrim(s));
 }
 
-// Выделение названия
+// Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёСЏ
 string_view GetName(string_view& line_sv) {
-    // Удаление префикса
+    // РЈРґР°Р»РµРЅРёРµ РїСЂРµС„РёРєСЃР°
     line_sv.remove_prefix(line_sv.find(' ') + 1);
 
-    // Нахождение двоеточия
+    // РќР°С…РѕР¶РґРµРЅРёРµ РґРІРѕРµС‚РѕС‡РёСЏ
     size_t name_end = line_sv.find(':');
 
-    // Выделение названия
+    // Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёСЏ
     string_view name = line_sv.substr(0, name_end);
 
-    // Удаление названия из строки
+    // РЈРґР°Р»РµРЅРёРµ РЅР°Р·РІР°РЅРёСЏ РёР· СЃС‚СЂРѕРєРё
     line_sv.remove_prefix(line_sv.find_first_not_of(':', name_end));
 
     return name;
 }
 
-// Выделение одной координаты
+// Р’С‹РґРµР»РµРЅРёРµ РѕРґРЅРѕР№ РєРѕРѕСЂРґРёРЅР°С‚С‹
 double GetNumber(string_view& line_sv) {
     double number;
 
-    // Находим знак разделения ','
+    // РќР°С…РѕРґРёРј Р·РЅР°Рє СЂР°Р·РґРµР»РµРЅРёСЏ ','
     size_t comma_pos = line_sv.find(',');
 
-    // Выделяем данные
+    // Р’С‹РґРµР»СЏРµРј РґР°РЅРЅС‹Рµ
     string_view lng = line_sv.substr(0, comma_pos);
 
-    // Преобразуем данные
+    // РџСЂРµРѕР±СЂР°Р·СѓРµРј РґР°РЅРЅС‹Рµ
     number = stod(string(TrimLine(lng)));
 
-    // Удаление данных из строки
+    // РЈРґР°Р»РµРЅРёРµ РґР°РЅРЅС‹С… РёР· СЃС‚СЂРѕРєРё
     line_sv.remove_prefix(min(line_sv.find_first_not_of(',', comma_pos), line_sv.size()));
 
     return number;
 }
 
-// Выделение координат
+// Р’С‹РґРµР»РµРЅРёРµ РєРѕРѕСЂРґРёРЅР°С‚
 pair<double, double> GetCoordinates(string_view& line_sv) {
-    // Возвращаемые значения
+    // Р’РѕР·РІСЂР°С‰Р°РµРјС‹Рµ Р·РЅР°С‡РµРЅРёСЏ
     double latitude = GetNumber(line_sv);
     double longtitude = GetNumber(line_sv);
 
-    // Возвращаем даные
+    // Р’РѕР·РІСЂР°С‰Р°РµРј РґР°РЅС‹Рµ
     return { latitude, longtitude };
 }
 
-// Выделение названия второй остановки и расстояния до нее
+// Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёСЏ РІС‚РѕСЂРѕР№ РѕСЃС‚Р°РЅРѕРІРєРё Рё СЂР°СЃСЃС‚РѕСЏРЅРёСЏ РґРѕ РЅРµРµ
 StopDistance GetDistance(string_view stop1_name, string_view& line_sv) {
-    // Буффер для возврата
+    // Р‘СѓС„С„РµСЂ РґР»СЏ РІРѕР·РІСЂР°С‚Р°
     StopDistance distance;
 
-    // Присваиваем имя текущей остановки
+    // РџСЂРёСЃРІР°РёРІР°РµРј РёРјСЏ С‚РµРєСѓС‰РµР№ РѕСЃС‚Р°РЅРѕРІРєРё
     distance.stop1_name_ = stop1_name;
     
-    // Находим конец расстояния 'm'
+    // РќР°С…РѕРґРёРј РєРѕРЅРµС† СЂР°СЃСЃС‚РѕСЏРЅРёСЏ 'm'
     size_t distance_end = line_sv.find('m');
 
-    // Преобразование сроки в число
+    // РџСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ СЃСЂРѕРєРё РІ С‡РёСЃР»Рѕ
     distance.distance_ = stoi(string(line_sv.substr(0, distance_end)));
 
-    // Убираем данные и предлог перед названием
+    // РЈР±РёСЂР°РµРј РґР°РЅРЅС‹Рµ Рё РїСЂРµРґР»РѕРі РїРµСЂРµРґ РЅР°Р·РІР°РЅРёРµРј
     line_sv.remove_prefix(distance_end + 4);
 
-    // Нахождение разделителя ','
+    // РќР°С…РѕР¶РґРµРЅРёРµ СЂР°Р·РґРµР»РёС‚РµР»СЏ ','
     size_t comma_pos = line_sv.find(',');
 
-    // Выделение названия второй остановки
+    // Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёСЏ РІС‚РѕСЂРѕР№ РѕСЃС‚Р°РЅРѕРІРєРё
     distance.stop2_name_ = TrimLine(line_sv.substr(0, min(comma_pos, line_sv.size())));
 
-    // Удаляем название
+    // РЈРґР°Р»СЏРµРј РЅР°Р·РІР°РЅРёРµ
     line_sv.remove_prefix(min(line_sv.find_first_not_of(',', comma_pos), line_sv.size()));
 
     return distance;
 }
 
-// Разбитие строки на данные об остановке. Возвращает свойства остановки
-// и пеносит данные о расстояниях в переданный словарь
+// Р Р°Р·Р±РёС‚РёРµ СЃС‚СЂРѕРєРё РЅР° РґР°РЅРЅС‹Рµ РѕР± РѕСЃС‚Р°РЅРѕРІРєРµ. Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРІРѕР№СЃС‚РІР° РѕСЃС‚Р°РЅРѕРІРєРё
+// Рё РїРµРЅРѕСЃРёС‚ РґР°РЅРЅС‹Рµ Рѕ СЂР°СЃСЃС‚РѕСЏРЅРёСЏС… РІ РїРµСЂРµРґР°РЅРЅС‹Р№ СЃР»РѕРІР°СЂСЊ
 tuple<string_view, double, double> ParseStopInfo(string_view line_sv, deque<StopDistance>& distances) {
-    // Выделение название остановки
+    // Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёРµ РѕСЃС‚Р°РЅРѕРІРєРё
     string_view stop_name = GetName(line_sv);
 
     auto [latitude, longitude] = GetCoordinates(line_sv);
 
-    // Указание расстояния до остановок, если есть в запросе
+    // РЈРєР°Р·Р°РЅРёРµ СЂР°СЃСЃС‚РѕСЏРЅРёСЏ РґРѕ РѕСЃС‚Р°РЅРѕРІРѕРє, РµСЃР»Рё РµСЃС‚СЊ РІ Р·Р°РїСЂРѕСЃРµ
     while (!line_sv.empty()) {
         distances.push_back(move(GetDistance(stop_name, line_sv)));
     }
 
-    // Явный возврат значений для возможности тестирования
+    // РЇРІРЅС‹Р№ РІРѕР·РІСЂР°С‚ Р·РЅР°С‡РµРЅРёР№ РґР»СЏ РІРѕР·РјРѕР¶РЅРѕСЃС‚Рё С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ
     return { stop_name, latitude, longitude };
 }
 
 
-// Разбитие строки на данные о маршруте. Возвращает свойства маршрута
+// Р Р°Р·Р±РёС‚РёРµ СЃС‚СЂРѕРєРё РЅР° РґР°РЅРЅС‹Рµ Рѕ РјР°СЂС€СЂСѓС‚Рµ. Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРІРѕР№СЃС‚РІР° РјР°СЂС€СЂСѓС‚Р°
 tuple<string_view, bool, vector<string_view>> ParseBusInfo(string_view line_sv) {
-    // Выделение название маршрута
+    // Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёРµ РјР°СЂС€СЂСѓС‚Р°
     string_view bus_name = GetName(line_sv);
 
-    // Провека, что маршрут кольцевой
+    // РџСЂРѕРІРµРєР°, С‡С‚Рѕ РјР°СЂС€СЂСѓС‚ РєРѕР»СЊС†РµРІРѕР№
     bool is_circle = (line_sv.find('>') != line_sv.npos);
 
-    // Массив названий остановок
+    // РњР°СЃСЃРёРІ РЅР°Р·РІР°РЅРёР№ РѕСЃС‚Р°РЅРѕРІРѕРє
     vector<string_view> stop_names;
 
-    // Разделители названий остановок
+    // Р Р°Р·РґРµР»РёС‚РµР»Рё РЅР°Р·РІР°РЅРёР№ РѕСЃС‚Р°РЅРѕРІРѕРє
     const string spacers = "->"s;
 
-    // Начало названия остановки
+    // РќР°С‡Р°Р»Рѕ РЅР°Р·РІР°РЅРёСЏ РѕСЃС‚Р°РЅРѕРІРєРё
     size_t stop_begin = 0;
 
-    // Конец названия остановки
+    // РљРѕРЅРµС† РЅР°Р·РІР°РЅРёСЏ РѕСЃС‚Р°РЅРѕРІРєРё
     size_t stop_end;
 
-    // Последняя позиция в строке
+    // РџРѕСЃР»РµРґРЅСЏСЏ РїРѕР·РёС†РёСЏ РІ СЃС‚СЂРѕРєРµ
     auto pos_end = line_sv.npos;
 
     while (stop_begin != pos_end) {
-        // Находим индекс разделителя
+        // РќР°С…РѕРґРёРј РёРЅРґРµРєСЃ СЂР°Р·РґРµР»РёС‚РµР»СЏ
         auto spacer_id = line_sv.find_first_of(spacers, stop_begin);
 
-        // Определение конца названия остановки
+        // РћРїСЂРµРґРµР»РµРЅРёРµ РєРѕРЅС†Р° РЅР°Р·РІР°РЅРёСЏ РѕСЃС‚Р°РЅРѕРІРєРё
         spacer_id == pos_end ? stop_end = line_sv.size()  : stop_end = spacer_id;
 
-        // Выделение название остановки
+        // Р’С‹РґРµР»РµРЅРёРµ РЅР°Р·РІР°РЅРёРµ РѕСЃС‚Р°РЅРѕРІРєРё
         string_view stop_name = TrimLine(line_sv.substr(stop_begin, stop_end - stop_begin));
 
-        // Вносим название в список
+        // Р’РЅРѕСЃРёРј РЅР°Р·РІР°РЅРёРµ РІ СЃРїРёСЃРѕРє
         stop_names.push_back(stop_name);
 
-        // Удаление выделенного названия
+        // РЈРґР°Р»РµРЅРёРµ РІС‹РґРµР»РµРЅРЅРѕРіРѕ РЅР°Р·РІР°РЅРёСЏ
         line_sv.remove_prefix(stop_end);
 
-        // Переопределяем начало поиска
+        // РџРµСЂРµРѕРїСЂРµРґРµР»СЏРµРј РЅР°С‡Р°Р»Рѕ РїРѕРёСЃРєР°
         stop_begin = line_sv.find_first_not_of(spacers);
     }
 
-    // Явный возврат значений для возможности тестирования
+    // РЇРІРЅС‹Р№ РІРѕР·РІСЂР°С‚ Р·РЅР°С‡РµРЅРёР№ РґР»СЏ РІРѕР·РјРѕР¶РЅРѕСЃС‚Рё С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ
     return {bus_name, is_circle, stop_names};
 }
 
@@ -199,50 +199,50 @@ tuple<string_view, bool, vector<string_view>> ParseBusInfo(string_view line_sv) 
 
 
 
-// Считывание входного потока для добавления инфомарции в базу
+// РЎС‡РёС‚С‹РІР°РЅРёРµ РІС…РѕРґРЅРѕРіРѕ РїРѕС‚РѕРєР° РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ РёРЅС„РѕРјР°СЂС†РёРё РІ Р±Р°Р·Сѓ
 void ReadLines(TransportCatalogue& catalog, std::istream& in) {
-	// Количество запросов
+	// РљРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїСЂРѕСЃРѕРІ
     size_t number_of_lines = detail::ReadLineWithNumber(in);
 
-    // Массив для хранения строк с информацией по остановкам при чтении
+    // РњР°СЃСЃРёРІ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ СЃС‚СЂРѕРє СЃ РёРЅС„РѕСЂРјР°С†РёРµР№ РїРѕ РѕСЃС‚Р°РЅРѕРІРєР°Рј РїСЂРё С‡С‚РµРЅРёРё
     vector<string> stop_line_s;
     stop_line_s.reserve(number_of_lines);
 
-    // Массив для хранения строк с информацией по маршрутам при чтении
+    // РњР°СЃСЃРёРІ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ СЃС‚СЂРѕРє СЃ РёРЅС„РѕСЂРјР°С†РёРµР№ РїРѕ РјР°СЂС€СЂСѓС‚Р°Рј РїСЂРё С‡С‚РµРЅРёРё
     vector<string> bus_line_s;
     bus_line_s.reserve(number_of_lines);
 
-    // Словарь для хранения расстояний между остановками
+    // РЎР»РѕРІР°СЂСЊ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ СЂР°СЃСЃС‚РѕСЏРЅРёР№ РјРµР¶РґСѓ РѕСЃС‚Р°РЅРѕРІРєР°РјРё
     deque<detail::StopDistance> stops_distance;
 
-    // Считываем строки по отдельности
+    // РЎС‡РёС‚С‹РІР°РµРј СЃС‚СЂРѕРєРё РїРѕ РѕС‚РґРµР»СЊРЅРѕСЃС‚Рё
     for (size_t i = 0; i < number_of_lines; ++i) {
         string line;
         getline(in, line);
 
-        // К какому типу относится строка: остановка или маршрут
+        // Рљ РєР°РєРѕРјСѓ С‚РёРїСѓ РѕС‚РЅРѕСЃРёС‚СЃСЏ СЃС‚СЂРѕРєР°: РѕСЃС‚Р°РЅРѕРІРєР° РёР»Рё РјР°СЂС€СЂСѓС‚
         line[0] == 'S' ? stop_line_s.push_back(move(line)) : bus_line_s.push_back(move(line));
     }
 
-    // Добавление остановок в базу
+    // Р”РѕР±Р°РІР»РµРЅРёРµ РѕСЃС‚Р°РЅРѕРІРѕРє РІ Р±Р°Р·Сѓ
     for (string_view line_sv : stop_line_s) {
-        // Выделение информации об остановке
+        // Р’С‹РґРµР»РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РѕР± РѕСЃС‚Р°РЅРѕРІРєРµ
         auto [stop_name, latitude, longitude] = detail::ParseStopInfo(line_sv, stops_distance);
 
-        // Перенос инфомарции в базу
+        // РџРµСЂРµРЅРѕСЃ РёРЅС„РѕРјР°СЂС†РёРё РІ Р±Р°Р·Сѓ
         catalog.AddStop(stop_name, latitude, longitude);
     }
 
-    // Добавление информации о расстояниях в базу
+    // Р”РѕР±Р°РІР»РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЂР°СЃСЃС‚РѕСЏРЅРёСЏС… РІ Р±Р°Р·Сѓ
     for (detail::StopDistance& distance : stops_distance) {
         catalog.SetDistance(distance.stop1_name_, distance.stop2_name_, distance.distance_);
     }
 
-    // Добавление маршрутов в базу
+    // Р”РѕР±Р°РІР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚РѕРІ РІ Р±Р°Р·Сѓ
     for (string_view line_sv : bus_line_s) {
         auto [bus_name, is_circle, stop_names]  = move(detail::ParseBusInfo(line_sv));
 
-        // Перенос инфомарции в базу
+        // РџРµСЂРµРЅРѕСЃ РёРЅС„РѕРјР°СЂС†РёРё РІ Р±Р°Р·Сѓ
         catalog.AddBus(bus_name, is_circle, stop_names);
     }
 }

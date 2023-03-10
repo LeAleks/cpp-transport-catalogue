@@ -1,11 +1,11 @@
-#pragma once
+п»ї#pragma once
 
 #include <cmath>
 
 
 namespace transport_catalogue {
 
-// Функции для работы с географическими координатами
+// Р¤СѓРЅРєС†РёРё РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РіРµРѕРіСЂР°С„РёС‡РµСЃРєРёРјРё РєРѕРѕСЂРґРёРЅР°С‚Р°РјРё
 namespace geo{
 
 struct Coordinates {
