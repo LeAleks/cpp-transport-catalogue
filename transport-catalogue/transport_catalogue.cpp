@@ -1,41 +1,29 @@
-﻿#include "transport_catalogue.h"
+#include "transport_catalogue.h"
 
 #include <cassert>
 #include <unordered_set>
-
-#include <iostream>
+#include <algorithm>
 
 using namespace std;
 
-
 namespace transport_catalogue {
 
-
 // Добавление остановки в базу
-void TransportCatalogue::AddStop(string_view name, double latitude, double longitude) {
-	// Создаем узел остановки
-	Stop_ stop;
-
-	// Заполняем узел
-	stop.name_ = string(name);
-	stop.location_.lat = latitude;
-	stop.location_.lng = longitude;
-
+void TransportCatalogue::AddStop(Stop&& stop) {
 	// Добавляем остановку в массив
-	Stop_* ptr = &all_stops_.emplace_back(move(stop));
+	Stop* ptr = &all_stops_.emplace_back(move(stop));
 
 	// Добавляем информацию об остановке в лист остановок
 	stops_list_[ptr->name_] = ptr;
 
 	// Добавляем остановку в словарь остановок со списком маршрутов
 	buses_to_stop_[ptr];
-
 }
 
 // Добавление маршрута в базу
 void TransportCatalogue::AddBus(string_view name, bool is_circle, vector<string_view>& stops_list) {
 	// Создаем узел Bus
-	Bus_ bus;
+	Bus bus;
 
 	// Присваиваем имя и тип маршрута
 	bus.name_ = string(name);
@@ -45,7 +33,7 @@ void TransportCatalogue::AddBus(string_view name, bool is_circle, vector<string_
 	bus.stops_.reserve(stops_list.size());
 
 	// Добавляем маршрут в массив с маршрутами
-	Bus_* bus_ptr = &all_buses_.emplace_back(move(bus));
+	Bus* bus_ptr = &all_buses_.emplace_back(move(bus));
 
 	// По указателю на маршрут заполняем список остановок, вместе с этим обновляя
 	// словарь остановок со списком маршрутов
@@ -59,6 +47,7 @@ void TransportCatalogue::AddBus(string_view name, bool is_circle, vector<string_
 		// Находим остановку в словаре остановок со списком маршрутов и добавляем
 		// в список маршрут
 		buses_to_stop_[stop_ptr].insert(bus_ptr->name_);
+		//buses_to_stop_[stop_ptr].insert(bus_ptr);
 	}
 
 	// Добавляем информацию о маршруте в лист маршрутов
@@ -66,27 +55,24 @@ void TransportCatalogue::AddBus(string_view name, bool is_circle, vector<string_
 }
 
 
-
 // Поиск остановки по имени. Возвращает указатель на список маршрутов через остановку
 // Если остановки нет, то возвращает нулевой указатель
-set<string_view>* TransportCatalogue::FindStop(string_view stop_name) {
-	// Указатель на словарь маршрутов
-	set<string_view>* buses_list_ptr = nullptr;
-
+const set<string_view>* TransportCatalogue::FindStop(string_view stop_name) const {
+//const set<Bus*>* TransportCatalogue::FindStop(string_view stop_name) const{
 	// Проверка наличия остановки в словаре остановок
 	if (stops_list_.count(stop_name)) {
 		// Если остановка есть, то берем указать на нее и по нему ищем список маршрутов для
 		// остановки. Возвращаем указатель на список
-		buses_list_ptr = &buses_to_stop_.at(stops_list_.at(stop_name));
+		return &buses_to_stop_.at(stops_list_.at(stop_name));
 	}
 
-	return buses_list_ptr;
+	return nullptr;
 }
 
 // Поиск маршрута по имени. Возвращает указатель на маршрут
 // Если остановки нет, то возвращает нулевой указатель
-TransportCatalogue::Bus_* TransportCatalogue::FindBus(string_view bus_name) {
-	Bus_* bus = nullptr;
+const Bus* TransportCatalogue::FindBus(string_view bus_name) const{
+	Bus* bus = nullptr;
 
 	if (buses_list_.count(bus_name)) {
 		bus = buses_list_.at(bus_name);
@@ -96,22 +82,21 @@ TransportCatalogue::Bus_* TransportCatalogue::FindBus(string_view bus_name) {
 }
 
 
-
 // Задание дистанции между остановками
-void TransportCatalogue::SetDistance(string_view stop1, string_view stop2, int distance) {
+void TransportCatalogue::SetDistance(StopsDistance& distance) {
 	// Возврат указателей на остановки
-	Stop_* stop1_ptr = stops_list_.at(stop1);
-	Stop_* stop2_ptr = stops_list_.at(stop2);
+	Stop* stop1_ptr = stops_list_.at(distance.stop1_name_);
+	Stop* stop2_ptr = stops_list_.at(distance.stop2_name_);
 
 	// Внесение значения в словарь
-	stop_distance_[{stop1_ptr, stop2_ptr}] = distance;
+	stop_distance_[{stop1_ptr, stop2_ptr}] = distance.distance_;
 }
 
 // Получение физического расстояния между остановками из словаря
-int TransportCatalogue::GetDistance(string_view stop1, string_view stop2) {
+int TransportCatalogue::GetDistance(string_view stop1, string_view stop2) const{
 	// Возврат указателей на остановки
-	Stop_* stop1_ptr = stops_list_.at(stop1);
-	Stop_* stop2_ptr = stops_list_.at(stop2);
+	Stop* stop1_ptr = stops_list_.at(stop1);
+	Stop* stop2_ptr = stops_list_.at(stop2);
 
 	// Буффер для расстояния
 	int distance;
@@ -128,17 +113,17 @@ int TransportCatalogue::GetDistance(string_view stop1, string_view stop2) {
 	else {
 		distance = 0;
 	}
-	
+
 	return distance;
 }
 
 // Расчет количества остановок на маршруте и географическую длину
 // Возврат (общее, уникальное, расстояние, извилистость)
-tuple<int, int, int, double> TransportCatalogue::StopsCount(Bus_* bus_ptr) {
+BusStat TransportCatalogue::StopsCount(const Bus* bus_ptr) const{
 
 	// Проверяем, что остановок больше чем 1
 	if (bus_ptr->stops_.size() < 2) {
-		return { 1, 1, 0, 0.0 };
+		return { 0.0, 0, 1, 1 };
 	}
 
 	// Количество остановок в списке
@@ -206,26 +191,44 @@ tuple<int, int, int, double> TransportCatalogue::StopsCount(Bus_* bus_ptr) {
 	// Расчет извилистости
 	double curvature = distance_fact / distance_geo;
 
-	return { number_of_stops, unique_stops, distance_fact, curvature };
+	//return { number_of_stops, unique_stops, distance_fact, curvature };
+	return {curvature, distance_fact, number_of_stops, unique_stops};
 }
 
 // Получение информации о маршруте
-tuple<string_view, int, int, int, double> TransportCatalogue::GetBusInfo(string_view bus_name) {
-	Bus_* bus_ptr = FindBus(bus_name);
+optional<BusStat> TransportCatalogue::GetBusInfo(string_view bus_name) const {
+	const Bus* bus_ptr = FindBus(bus_name);
 
-	// Проверка, что такой маршрут есть. Если нет, возвращает нудевые значения
+	// Проверка, что такой маршрут есть. Если нет, возвращает nullopt,
+	// означающее отсутствие значения
 	if (bus_ptr == nullptr) {
-		return { bus_name, 0 , 0, 0, 0.0 };
+		return nullopt;
 	}
 
 	// Информация об остановках на маршруте и георгафической длине маршрута
-	auto [number_of_stops, unique_stops, distance, curvature] = StopsCount(bus_ptr);
-
-	// Расчет физической длины маршрута
-
-	return { bus_ptr->name_, number_of_stops, unique_stops, distance, curvature };
+	return StopsCount(bus_ptr);
 }
 
+// Возврат словаря маршрутов с указателями
+vector<const Bus*> TransportCatalogue::GetBusList() const {
+	vector<const Bus*> result;
+	result.reserve(buses_list_.size());
 
+	// Перенос данных из unordered_map в vector
+	for (auto& i : buses_list_) {
+		result.push_back(i.second);
+	}
+
+	// Сортировка по названию маршрута
+	sort(result.begin(), result.end(),
+		[](const Bus* left, const Bus* right)
+		{
+			return lexicographical_compare(
+				left->name_.begin(), left->name_.end(),
+				right->name_.begin(), right->name_.end());
+		});
+
+	return result;
+}
 
 } // End Of transport_catalog

@@ -39,10 +39,12 @@ void RequestStop(TransportCatalogue& catalog, string_view query, std::ostream& o
             if (is_first) {
                 is_first = false;
                 out << i;
+                //out << i->name_;
             }
             else
             {
                 out << " " << i;
+                //out << " " << i->name_;
             }
         }
         out << endl;
@@ -54,18 +56,18 @@ void RequestBus(TransportCatalogue& catalog, string_view query, std::ostream& ou
     query.remove_prefix(4);
 
     // Возврат информации о маршруте
-    auto [bus_name, number_of_stops_on_route, number_unique, lenght, curvature] = catalog.GetBusInfo(query);
+    auto route = catalog.GetBusInfo(query);
 
     // Если пришли нулевые значения, то маршрут не найден
-    if (number_of_stops_on_route == 0) {
-        out << "Bus "s << bus_name << ": not found\n"s;
+    if (route.has_value()) {
+        out << "Bus "s << query << ": "s <<
+            route->stop_count << " stops on route, "s <<
+            route->unique_stop_count << " unique stops, "s <<
+            route->route_length << " route length, "s <<
+            route->curvature << " curvature\n"s;  
     }
     else {
-        out << "Bus "s << bus_name << ": "s <<
-            number_of_stops_on_route << " stops on route, "s <<
-            number_unique << " unique stops, "s << 
-            lenght << " route length, "s <<
-            curvature << " curvature\n"s;
+        out << "Bus "s << query << ": not found\n"s;
     }
 
 }

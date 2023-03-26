@@ -14,15 +14,7 @@ namespace input_reader {
 
 using namespace std;
 
-
 namespace detail{
-
-// Узел хранения инфомарции о расстоянии между остановками
-struct StopDistance {
-    int distance_;
-    string_view stop1_name_;
-    string_view stop2_name_;
-};
 
 string ReadLine(istream& in) {
     string s;
@@ -101,9 +93,9 @@ pair<double, double> GetCoordinates(string_view& line_sv) {
 }
 
 // Выделение названия второй остановки и расстояния до нее
-StopDistance GetDistance(string_view stop1_name, string_view& line_sv) {
+StopsDistance GetDistance(string_view stop1_name, string_view& line_sv) {
     // Буффер для возврата
-    StopDistance distance;
+    StopsDistance distance;
 
     // Присваиваем имя текущей остановки
     distance.stop1_name_ = stop1_name;
@@ -131,7 +123,7 @@ StopDistance GetDistance(string_view stop1_name, string_view& line_sv) {
 
 // Разбитие строки на данные об остановке. Возвращает свойства остановки
 // и пеносит данные о расстояниях в переданный словарь
-tuple<string_view, double, double> ParseStopInfo(string_view line_sv, deque<StopDistance>& distances) {
+Stop ParseStopInfo(string_view line_sv, deque<StopsDistance>& distances) {
     // Выделение название остановки
     string_view stop_name = GetName(line_sv);
 
@@ -142,8 +134,10 @@ tuple<string_view, double, double> ParseStopInfo(string_view line_sv, deque<Stop
         distances.push_back(move(GetDistance(stop_name, line_sv)));
     }
 
-    // Явный возврат значений для возможности тестирования
-    return { stop_name, latitude, longitude };
+    Stop stop{ string(stop_name) , {latitude, longitude} };
+
+    // Явный возврат значения для возможности тестирования
+    return stop;
 }
 
 
@@ -212,7 +206,7 @@ void ReadLines(TransportCatalogue& catalog, std::istream& in) {
     bus_line_s.reserve(number_of_lines);
 
     // Словарь для хранения расстояний между остановками
-    deque<detail::StopDistance> stops_distance;
+    deque<StopsDistance> stops_distance;
 
     // Считываем строки по отдельности
     for (size_t i = 0; i < number_of_lines; ++i) {
@@ -226,15 +220,15 @@ void ReadLines(TransportCatalogue& catalog, std::istream& in) {
     // Добавление остановок в базу
     for (string_view line_sv : stop_line_s) {
         // Выделение информации об остановке
-        auto [stop_name, latitude, longitude] = detail::ParseStopInfo(line_sv, stops_distance);
+        Stop stop = detail::ParseStopInfo(line_sv, stops_distance);
 
         // Перенос инфомарции в базу
-        catalog.AddStop(stop_name, latitude, longitude);
+        catalog.AddStop(move(stop));
     }
 
     // Добавление информации о расстояниях в базу
-    for (detail::StopDistance& distance : stops_distance) {
-        catalog.SetDistance(distance.stop1_name_, distance.stop2_name_, distance.distance_);
+    for (auto& distance : stops_distance) {
+        catalog.SetDistance(distance);
     }
 
     // Добавление маршрутов в базу
