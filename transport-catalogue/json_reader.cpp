@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 
 #include <exception>
 #include <string_view>
@@ -26,8 +27,6 @@ transport_catalogue::Stop ParseStop(const json::Dict& request){
 	stop.location_.lat = request.at("latitude"s).AsDouble();
 	stop.location_.lng = request.at("longitude"s).AsDouble();
 
-	//cerr << stop.name_ << " " << stop.location_.lat << " " << stop.location_.lng << endl;
-
 	return stop;
 }
 
@@ -35,7 +34,7 @@ transport_catalogue::Stop ParseStop(const json::Dict& request){
 void ParseDistances(deque<transport_catalogue::StopsDistance>& distances, const json::Dict& request) {
 	string_view this_stop_name = request.at("name"s).AsString();
 
-	for (auto& other_stop : request.at("road_distances"s).AsMap()) {
+	for (auto& other_stop : request.at("road_distances"s).AsDict()) {
 		transport_catalogue::StopsDistance distance;
 
 		distance.stop1_name_ = this_stop_name;
@@ -82,7 +81,7 @@ void FillCatalogue(transport_catalogue::TransportCatalogue& catalog, const json:
 	// Проход по массиву запросов для разбиения на группы
 	for (auto& request_ptr : input_base.AsArray()) {
 		// Выделение одного запроса
-		auto& request_as_map = request_ptr.AsMap();
+		auto& request_as_map = request_ptr.AsDict();
 
 		if (request_as_map.at("type"s).AsString() == "Stop"s) {
 			stops_in_ptr.push_back(request_ptr);
@@ -95,7 +94,7 @@ void FillCatalogue(transport_catalogue::TransportCatalogue& catalog, const json:
 	// Проход по массиву остановок
 	for (auto& stop_ptr : stops_in_ptr) {
 		// Перевод данных в словарь
-		auto& stop_in_dict = stop_ptr.AsMap();
+		auto& stop_in_dict = stop_ptr.AsDict();
 
 		// Добавление остановки в базу
 		catalog.AddStop(move(details::ParseStop(stop_in_dict)));
@@ -111,7 +110,7 @@ void FillCatalogue(transport_catalogue::TransportCatalogue& catalog, const json:
 
 	// Проход по массиву маршрутов
 	for (auto& bus_ptr : buses_in_ptr) {
-		auto [bus_name, circle, stop_names] = details::ParceBus(bus_ptr.AsMap());
+		auto [bus_name, circle, stop_names] = details::ParceBus(bus_ptr.AsDict());
 
 		// Передача данных в базу
 		catalog.AddBus(bus_name, circle, stop_names);
@@ -138,50 +137,62 @@ json::Node GenerateStop(
 	transport_catalogue::TransportCatalogue& catalog, 
 	const json::Dict& request_map) {
 
-	// Словарь для вывода данных по запросу
-	json::Dict response;
+	// Узел для возврата
+	json::Builder build_result{};
 
-	response["request_id"s] = request_map.at("id"s);
+	build_result.StartDict();
+
+	build_result.Key("request_id"s).Value(request_map.at("id"s).GetValue());
 
 	// Запрашиваем остановку
 	auto stop_ptr = catalog.FindStop(request_map.at("name"s).AsString());
 
 	if (stop_ptr == nullptr) {
-		response["error_message"s] = json::Node("not found"s);
+		build_result.Key("error_message"s).Value("not found"s);
 	}
 	else {
-		json::Array bus_names;
-		bus_names.reserve(stop_ptr->size());
+		build_result.Key("buses"s).StartArray();
+
 		for (auto& bus : *stop_ptr) {
-			bus_names.push_back(json::Node(string(bus)));
+			build_result.Value(string(bus));
 		}
-		response["buses"s] = json::Node(bus_names);
+
+		build_result.EndArray();
 	}
 
-	return json::Node(response);
+	build_result.EndDict();
+
+	return build_result.Build();
 }
 
 json::Node GenerateBus(
 	transport_catalogue::TransportCatalogue& catalog,
 	const json::Dict& request_map) {
 
-	// Словарь для вывода данных по запросу
-	json::Dict response;
-	response["request_id"s] = request_map.at("id"s);
+	// Узел для возврата
+	json::Builder result{};
 
 	auto bus_info = catalog.GetBusInfo(request_map.at("name"s).AsString());
 
 	if (bus_info.has_value()) {
-		response["curvature"s] = bus_info.value().curvature;
-		response["route_length"s] = bus_info.value().route_length;
-		response["stop_count"s] = bus_info.value().stop_count;
-		response["unique_stop_count"s] = bus_info.value().unique_stop_count;
+		result
+			.StartDict()
+				.Key("request_id"s).Value(request_map.at("id"s).GetValue())
+				.Key("curvature").Value(bus_info.value().curvature)
+				.Key("route_length"s).Value(bus_info.value().route_length)
+				.Key("stop_count"s).Value(bus_info.value().stop_count)
+				.Key("unique_stop_count"s).Value(bus_info.value().unique_stop_count)
+			.EndDict().Build();
 	}
 	else {
-		response["error_message"s] = json::Node("not found"s);
+		result
+			.StartDict()
+				.Key("request_id"s).Value(request_map.at("id"s).GetValue())
+				.Key("error_message"s).Value("not found"s)
+			.EndDict().Build();
 	}
 
-	return response;
+	return result.Build();
 }
 
 json::Node GenerateMap(
@@ -189,17 +200,21 @@ json::Node GenerateMap(
 	map_renderer::MapRenderer& renderer,
 	const json::Dict& request_map) {
 
-	// Словарь для вывода данных по запросу
-	json::Dict response;
-	response["request_id"s] = request_map.at("id"s);
-
+	// Рендер карты в строку
 	svg::Document doc = RenderMap(catalog, renderer);
 	ostringstream strm;
 	doc.Render(strm);
 
-	response["map"s] = json::Node(strm.str());
+	// Узел для возврата
+	json::Builder result{};
 
-	return response;
+	result
+		.StartDict()
+			.Key("request_id"s).Value(request_map.at("id"s).GetValue())
+			.Key("map"s).Value(strm.str())
+		.EndDict();
+
+	return result.Build();
 }
 
 
@@ -223,7 +238,7 @@ void PrintRequest(
 
 	// Проходим по запросам
 	for (auto& request_ptr : input_base.AsArray()) {
-		auto& request_map = request_ptr.AsMap();
+		auto& request_map = request_ptr.AsDict();
 
 		// Выводим данные в зависимости от типа запроса
 		if (request_map.at("type"s).AsString() == "Stop"s) {
@@ -240,9 +255,8 @@ void PrintRequest(
 		}
 	}
 
-	json::Node root_node(response_output);
-	json::Document doc(root_node);
-	json::Print(doc, output);
+	json::Print(json::Document(json::Builder{}.Value(response_output).Build()), output);
+
 }
 
 
@@ -279,7 +293,7 @@ void ParseRenderSettings(map_renderer::MapRenderer& renderer, const json::Node& 
 	map_renderer::RenderSettings settings;
 
 	// Словарь с данными рендера
-	auto& set_map = input_base.AsMap();
+	auto& set_map = input_base.AsDict();
 
 	// размеры поля
 	settings.width = set_map.at("width"s).AsDouble();
@@ -337,7 +351,7 @@ void ReadJson(transport_catalogue::TransportCatalogue& catalog,
 	map_renderer::MapRenderer& renderer,
 	std::istream& input,
 	std::ostream& output) {
-	
+
 	// JSON база данных
 	const auto input_database = json::Load(input);
 
@@ -345,31 +359,43 @@ void ReadJson(transport_catalogue::TransportCatalogue& catalog,
 	// [ - Array
 
 	// Проверка, что корневой узел - словарь
-	if (!input_database.GetRoot().IsMap()) {
+	if (!input_database.GetRoot().IsDict()) {
 		throw invalid_argument("Root isn't a Dict");
 	}
 
-	// Указатель на массив с base_requests
-	auto& base_requests_ptr = input_database.GetRoot().AsMap().at("base_requests"s);
-	
-	// Обработка запросов на внесение информации
-	details::FillCatalogue(catalog, base_requests_ptr);
 
-	// Указатель на массив с render_settings
-	auto& render_settings_ptr = input_database.GetRoot().AsMap().at("render_settings"s);
+	// Проверка, что есть запросы типа base_request
+	if (input_database.GetRoot().AsDict().count("base_requests"s) != 0) {
 
-	// Перенос параметров отрисовки в map_render
-	details::ParseRenderSettings(renderer, render_settings_ptr);
+		// Указатель на массив с base_requests
+		auto& base_requests_ptr = input_database.GetRoot().AsDict().at("base_requests"s);
 
-	// Указатель на массив с stat_requests
-	auto& stat_requests_ptr = input_database.GetRoot().AsMap().at("stat_requests"s);
+		// Обработка запросов на внесение информации
+		details::FillCatalogue(catalog, base_requests_ptr);
+	}
 
-	// Вывод данных в формате json
-	details::PrintRequest(catalog, renderer, stat_requests_ptr, output);
+	// Проверка, что есть запросы типа render_settings
+	if (input_database.GetRoot().AsDict().count("render_settings"s) != 0) {
+		// Указатель на массив с render_settings
+		auto& render_settings_ptr = input_database.GetRoot().AsDict().at("render_settings"s);
 
+		// Перенос параметров отрисовки в map_render
+		details::ParseRenderSettings(renderer, render_settings_ptr);
+	}
+
+
+	// Проверка, что есть запросы типа stat_requests
+	if (input_database.GetRoot().AsDict().count("stat_requests"s) != 0) {
+		// Указатель на массив с stat_requests
+		auto& stat_requests_ptr = input_database.GetRoot().AsDict().at("stat_requests"s);
+
+		// Вывод данных в формате json
+		details::PrintRequest(catalog, renderer, stat_requests_ptr, output);
+	}
 
 	//svg::Document doc = details::RenderMap(catalog, renderer);
 	//doc.Render(output);
 }
+
 
 }
