@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "json.h"
 
@@ -8,164 +8,164 @@
 
 namespace json {
 
-class AfterNoLim;
-class AfterKey;
-class AfterKeyValue;
-class AfterStartDict;
-class AfterStartArray;
-class AfterArrayValue;
+	class AfterNoLim;
+	class AfterKey;
+	class AfterKeyValue;
+	class AfterStartDict;
+	class AfterStartArray;
+	class AfterArrayValue;
 
-class Builder{
-public:
-	Builder()
-		: root_(nullptr) {}
+	class Builder {
+	public:
+		Builder()
+			: root_(nullptr) {}
 
-	AfterKey Key(std::string key);
-	AfterNoLim Value(Node::Value value);
-	AfterStartDict StartDict();
-	AfterStartArray StartArray();
-	AfterNoLim EndDict();
-	AfterNoLim EndArray();
-	Node Build();
-
-
-private:
-	// Конструируемый объект (аналог root_ у Document)
-	Node root_;
-
-	// стек указателей на те вершины JSON, которые ещё не построены: то есть
-	// текущее описываемое значение и цепочка его родителей. Он поможет возвращаться
-	// в нужный контекст после вызова End-методов.
-	std::vector<Node*> node_stack_;
-
-	// Буффер хранения ключа при заполении словаря и его статус
-	std::string key_buffer_;
-	bool key_is_entered_ = false;
-
-	// Проверка, что объект только что создан
-	bool ObjectJustCreated();
-
-	// Проверка готовности объекта
-	bool ObjectIsFinished();
-
-	// Проверка, что вызов после конструктора или после Key или после предыдущего элемента массива.
-	bool CheckCorrectCall();
-
-	// Создание узла для Array/Dict
-	bool StartList(Node&& node);
-
-};
+		AfterKey Key(std::string key);
+		AfterNoLim Value(Node::Value value);
+		AfterStartDict StartDict();
+		AfterStartArray StartArray();
+		AfterNoLim EndDict();
+		AfterNoLim EndArray();
+		Node Build();
 
 
-// --- Классы для обработки ошибок синтаксиса на этапе компиляции ---
+	private:
+		// РљРѕРЅСЃС‚СЂСѓРёСЂСѓРµРјС‹Р№ РѕР±СЉРµРєС‚ (Р°РЅР°Р»РѕРі root_ Сѓ Document)
+		Node root_;
 
-// 0. Без ограничений (Родительский класс)
-class AfterNoLim {
-public:
-	AfterNoLim(Builder& builder)
-		: builder_(builder) {}
-	
-	AfterKey Key(std::string key);
+		// СЃС‚РµРє СѓРєР°Р·Р°С‚РµР»РµР№ РЅР° С‚Рµ РІРµСЂС€РёРЅС‹ JSON, РєРѕС‚РѕСЂС‹Рµ РµС‰С‘ РЅРµ РїРѕСЃС‚СЂРѕРµРЅС‹: С‚Рѕ РµСЃС‚СЊ
+		// С‚РµРєСѓС‰РµРµ РѕРїРёСЃС‹РІР°РµРјРѕРµ Р·РЅР°С‡РµРЅРёРµ Рё С†РµРїРѕС‡РєР° РµРіРѕ СЂРѕРґРёС‚РµР»РµР№. РћРЅ РїРѕРјРѕР¶РµС‚ РІРѕР·РІСЂР°С‰Р°С‚СЊСЃСЏ
+		// РІ РЅСѓР¶РЅС‹Р№ РєРѕРЅС‚РµРєСЃС‚ РїРѕСЃР»Рµ РІС‹Р·РѕРІР° End-РјРµС‚РѕРґРѕРІ.
+		std::vector<Node*> node_stack_;
 
-	AfterNoLim Value(Node::Value value);
+		// Р‘СѓС„С„РµСЂ С…СЂР°РЅРµРЅРёСЏ РєР»СЋС‡Р° РїСЂРё Р·Р°РїРѕР»РµРЅРёРё СЃР»РѕРІР°СЂСЏ Рё РµРіРѕ СЃС‚Р°С‚СѓСЃ
+		std::string key_buffer_;
+		bool key_is_entered_ = false;
 
-	AfterStartDict StartDict();
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР·РґР°РЅ
+		bool ObjectJustCreated();
 
-	AfterStartArray StartArray();
+		// РџСЂРѕРІРµСЂРєР° РіРѕС‚РѕРІРЅРѕСЃС‚Рё РѕР±СЉРµРєС‚Р°
+		bool ObjectIsFinished();
 
-	AfterNoLim EndDict();
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РІС‹Р·РѕРІ РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° РёР»Рё РїРѕСЃР»Рµ Key РёР»Рё РїРѕСЃР»Рµ РїСЂРµРґС‹РґСѓС‰РµРіРѕ СЌР»РµРјРµРЅС‚Р° РјР°СЃСЃРёРІР°.
+		bool CheckCorrectCall();
 
-	AfterNoLim EndArray();
-	
-	Node Build();
-	
-	Builder& builder_;
-};
+		// РЎРѕР·РґР°РЅРёРµ СѓР·Р»Р° РґР»СЏ Array/Dict
+		bool StartList(Node&& node);
 
-// 1. Непосредственно после Key вызван Value, StartDict или StartArray.
-class AfterKey : public AfterNoLim {
-public:
-	AfterKey(Builder& builder)
-		: AfterNoLim(builder) {}
+	};
 
-	AfterKey Key(std::string key) = delete;
-	//AfterNoLim Value(Node::Value value) = delete;
-	//AfterStartDict StartDict() = delete;
-	//AfterStartArray StartArray() = delete;
-	AfterNoLim EndDict() = delete;
-	AfterNoLim EndArray() = delete;
-	Node Build() = delete;
 
-	// Переход к правилу 2
-	AfterKeyValue Value(Node::Value value);
-};
+	// --- РљР»Р°СЃСЃС‹ РґР»СЏ РѕР±СЂР°Р±РѕС‚РєРё РѕС€РёР±РѕРє СЃРёРЅС‚Р°РєСЃРёСЃР° РЅР° СЌС‚Р°РїРµ РєРѕРјРїРёР»СЏС†РёРё ---
 
-// 2. После вызова Value, последовавшего за вызовом Key, вызван Key или EndDict
-class AfterKeyValue : public AfterNoLim {
-public:
-	// Конструктор от AfterNoLim, т.к. базовый Value возвращает именно этот класс
-	AfterKeyValue(AfterNoLim no_lim)
-		: AfterNoLim(no_lim.builder_) {}
+	// 0. Р‘РµР· РѕРіСЂР°РЅРёС‡РµРЅРёР№ (Р РѕРґРёС‚РµР»СЊСЃРєРёР№ РєР»Р°СЃСЃ)
+	class AfterNoLim {
+	public:
+		AfterNoLim(Builder& builder)
+			: builder_(builder) {}
 
-	//AfterKey Key(std::string key) = delete;
-	AfterNoLim Value(Node::Value value) = delete;
-	AfterStartDict StartDict() = delete;
-	AfterStartArray StartArray() = delete;
-	//AfterNoLim EndDict() = delete;
-	AfterNoLim EndArray() = delete;
-	Node Build() = delete;
-};
+		AfterKey Key(std::string key);
 
-// 3. За вызовом StartDict следует Key или EndDict
-class AfterStartDict : public AfterNoLim {
-public:
-	AfterStartDict(Builder& builder)
-		: AfterNoLim(builder) {}
+		AfterNoLim Value(Node::Value value);
 
-	//AfterKey Key(std::string key) = delete;
-	AfterNoLim Value(Node::Value value) = delete;
-	AfterStartDict StartDict() = delete;
-	AfterStartArray StartArray() = delete;
-	//AfterNoLim EndDict() = delete;
-	AfterNoLim EndArray() = delete;
-	Node Build() = delete;
-};
+		AfterStartDict StartDict();
 
-// 4. За вызовом StartArray следует Value, StartDict, StartArray или EndArray
-class AfterStartArray : public AfterNoLim {
-public:
-	AfterStartArray(Builder& builder)
-		: AfterNoLim(builder) {}
+		AfterStartArray StartArray();
 
-	AfterKey Key(std::string key) = delete;
-	//AfterNoLim Value(Node::Value value) = delete;
-	//AfterStartDict StartDict() = delete;
-	//AfterStartArray StartArray() = delete;
-	AfterNoLim EndDict() = delete;
-	//AfterNoLim EndArray() = delete;
-	Node Build() = delete;
+		AfterNoLim EndDict();
 
-	// Переход к правилу 5
-	AfterArrayValue Value(Node::Value value);
-};
+		AfterNoLim EndArray();
 
-// 5. После вызова StartArray и серии Value следует Value, StartDict, StartArray или EndArray
-class AfterArrayValue : public AfterNoLim {
-public:
-	AfterArrayValue(AfterNoLim no_lim)
-		: AfterNoLim(no_lim.builder_) {}
+		Node Build();
 
-	AfterKey Key(std::string key) = delete;
-	//AfterNoLim Value(Node::Value value) = delete;
-	//AfterStartDict StartDict() = delete;
-	//AfterStartArray StartArray() = delete;
-	AfterNoLim EndDict() = delete;
-	//AfterNoLim EndArray() = delete;
-	Node Build() = delete;
+		Builder& builder_;
+	};
 
-	// Продолжение выполения правила 5
-	AfterArrayValue Value(Node::Value value);
-};
+	// 1. РќРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ РїРѕСЃР»Рµ Key РІС‹Р·РІР°РЅ Value, StartDict РёР»Рё StartArray.
+	class AfterKey : public AfterNoLim {
+	public:
+		AfterKey(Builder& builder)
+			: AfterNoLim(builder) {}
+
+		AfterKey Key(std::string key) = delete;
+		//AfterNoLim Value(Node::Value value) = delete;
+		//AfterStartDict StartDict() = delete;
+		//AfterStartArray StartArray() = delete;
+		AfterNoLim EndDict() = delete;
+		AfterNoLim EndArray() = delete;
+		Node Build() = delete;
+
+		// РџРµСЂРµС…РѕРґ Рє РїСЂР°РІРёР»Сѓ 2
+		AfterKeyValue Value(Node::Value value);
+	};
+
+	// 2. РџРѕСЃР»Рµ РІС‹Р·РѕРІР° Value, РїРѕСЃР»РµРґРѕРІР°РІС€РµРіРѕ Р·Р° РІС‹Р·РѕРІРѕРј Key, РІС‹Р·РІР°РЅ Key РёР»Рё EndDict
+	class AfterKeyValue : public AfterNoLim {
+	public:
+		// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РѕС‚ AfterNoLim, С‚.Рє. Р±Р°Р·РѕРІС‹Р№ Value РІРѕР·РІСЂР°С‰Р°РµС‚ РёРјРµРЅРЅРѕ СЌС‚РѕС‚ РєР»Р°СЃСЃ
+		AfterKeyValue(AfterNoLim no_lim)
+			: AfterNoLim(no_lim.builder_) {}
+
+		//AfterKey Key(std::string key) = delete;
+		AfterNoLim Value(Node::Value value) = delete;
+		AfterStartDict StartDict() = delete;
+		AfterStartArray StartArray() = delete;
+		//AfterNoLim EndDict() = delete;
+		AfterNoLim EndArray() = delete;
+		Node Build() = delete;
+	};
+
+	// 3. Р—Р° РІС‹Р·РѕРІРѕРј StartDict СЃР»РµРґСѓРµС‚ Key РёР»Рё EndDict
+	class AfterStartDict : public AfterNoLim {
+	public:
+		AfterStartDict(Builder& builder)
+			: AfterNoLim(builder) {}
+
+		//AfterKey Key(std::string key) = delete;
+		AfterNoLim Value(Node::Value value) = delete;
+		AfterStartDict StartDict() = delete;
+		AfterStartArray StartArray() = delete;
+		//AfterNoLim EndDict() = delete;
+		AfterNoLim EndArray() = delete;
+		Node Build() = delete;
+	};
+
+	// 4. Р—Р° РІС‹Р·РѕРІРѕРј StartArray СЃР»РµРґСѓРµС‚ Value, StartDict, StartArray РёР»Рё EndArray
+	class AfterStartArray : public AfterNoLim {
+	public:
+		AfterStartArray(Builder& builder)
+			: AfterNoLim(builder) {}
+
+		AfterKey Key(std::string key) = delete;
+		//AfterNoLim Value(Node::Value value) = delete;
+		//AfterStartDict StartDict() = delete;
+		//AfterStartArray StartArray() = delete;
+		AfterNoLim EndDict() = delete;
+		//AfterNoLim EndArray() = delete;
+		Node Build() = delete;
+
+		// РџРµСЂРµС…РѕРґ Рє РїСЂР°РІРёР»Сѓ 5
+		AfterArrayValue Value(Node::Value value);
+	};
+
+	// 5. РџРѕСЃР»Рµ РІС‹Р·РѕРІР° StartArray Рё СЃРµСЂРёРё Value СЃР»РµРґСѓРµС‚ Value, StartDict, StartArray РёР»Рё EndArray
+	class AfterArrayValue : public AfterNoLim {
+	public:
+		AfterArrayValue(AfterNoLim no_lim)
+			: AfterNoLim(no_lim.builder_) {}
+
+		AfterKey Key(std::string key) = delete;
+		//AfterNoLim Value(Node::Value value) = delete;
+		//AfterStartDict StartDict() = delete;
+		//AfterStartArray StartArray() = delete;
+		AfterNoLim EndDict() = delete;
+		//AfterNoLim EndArray() = delete;
+		Node Build() = delete;
+
+		// РџСЂРѕРґРѕР»Р¶РµРЅРёРµ РІС‹РїРѕР»РµРЅРёСЏ РїСЂР°РІРёР»Р° 5
+		AfterArrayValue Value(Node::Value value);
+	};
 
 
 

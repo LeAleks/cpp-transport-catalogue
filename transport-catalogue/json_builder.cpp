@@ -1,4 +1,4 @@
-#include "json_builder.h"
+п»ї#include "json_builder.h"
 
 #include <stdexcept>
 #include <utility>
@@ -6,336 +6,336 @@
 using namespace std::literals;
 
 
-// ОПИСАНИЕ
+// РћРџРРЎРђРќРР•
 
-// ОБРАБОТКА ОШИБОК
-//	В случае использования методов в неверном контексте ваш код должен выбросить
-//	исключение типа std::logic_error с понятным сообщением об ошибке.
-//	Это должно происходить в следующих ситуациях :
-//	  - Вызов метода Build при неготовом описываемом объекте, то есть сразу после
-//		конструктора или при незаконченных массивах и словарях.
-//    - Вызов любого метода, кроме Build, при готовом объекте.
-//	  - Вызов метода Key снаружи словаря или сразу после другого Key.
-//	  - Вызов Value, StartDict или StartArray где-либо, кроме как после конструктора,
-//		после Key или после предыдущего элемента массива.
-//	  - Вызов EndDict или EndArray в контексте другого контейнера
+// РћР‘Р РђР‘РћРўРљРђ РћРЁРР‘РћРљ
+//	Р’ СЃР»СѓС‡Р°Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ РјРµС‚РѕРґРѕРІ РІ РЅРµРІРµСЂРЅРѕРј РєРѕРЅС‚РµРєСЃС‚Рµ РІР°С€ РєРѕРґ РґРѕР»Р¶РµРЅ РІС‹Р±СЂРѕСЃРёС‚СЊ
+//	РёСЃРєР»СЋС‡РµРЅРёРµ С‚РёРїР° std::logic_error СЃ РїРѕРЅСЏС‚РЅС‹Рј СЃРѕРѕР±С‰РµРЅРёРµРј РѕР± РѕС€РёР±РєРµ.
+//	Р­С‚Рѕ РґРѕР»Р¶РЅРѕ РїСЂРѕРёСЃС…РѕРґРёС‚СЊ РІ СЃР»РµРґСѓСЋС‰РёС… СЃРёС‚СѓР°С†РёСЏС… :
+//	  - Р’С‹Р·РѕРІ РјРµС‚РѕРґР° Build РїСЂРё РЅРµРіРѕС‚РѕРІРѕРј РѕРїРёСЃС‹РІР°РµРјРѕРј РѕР±СЉРµРєС‚Рµ, С‚Рѕ РµСЃС‚СЊ СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ
+//		РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° РёР»Рё РїСЂРё РЅРµР·Р°РєРѕРЅС‡РµРЅРЅС‹С… РјР°СЃСЃРёРІР°С… Рё СЃР»РѕРІР°СЂСЏС….
+//    - Р’С‹Р·РѕРІ Р»СЋР±РѕРіРѕ РјРµС‚РѕРґР°, РєСЂРѕРјРµ Build, РїСЂРё РіРѕС‚РѕРІРѕРј РѕР±СЉРµРєС‚Рµ.
+//	  - Р’С‹Р·РѕРІ РјРµС‚РѕРґР° Key СЃРЅР°СЂСѓР¶Рё СЃР»РѕРІР°СЂСЏ РёР»Рё СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РґСЂСѓРіРѕРіРѕ Key.
+//	  - Р’С‹Р·РѕРІ Value, StartDict РёР»Рё StartArray РіРґРµ-Р»РёР±Рѕ, РєСЂРѕРјРµ РєР°Рє РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°,
+//		РїРѕСЃР»Рµ Key РёР»Рё РїРѕСЃР»Рµ РїСЂРµРґС‹РґСѓС‰РµРіРѕ СЌР»РµРјРµРЅС‚Р° РјР°СЃСЃРёРІР°.
+//	  - Р’С‹Р·РѕРІ EndDict РёР»Рё EndArray РІ РєРѕРЅС‚РµРєСЃС‚Рµ РґСЂСѓРіРѕРіРѕ РєРѕРЅС‚РµР№РЅРµСЂР°
 
 namespace json {
 
-// При определении словаря задаёт строковое значение ключа
-// для очередной пары ключ-значение. Следующий вызов метода обязательно должен
-// задавать соответствующее этому ключу значение с помощью метода Value или
-// начинать его определение с помощью StartDict или StartArray.
-AfterKey Builder::Key(std::string key){
-	// Проверка вызова снаружи словаря или сразу после другого Key
-	if (node_stack_.empty() && !root_.IsDict()) {
-		throw std::logic_error("\"Key\": newly created object isn't dictionary."s);
-	}
+	// РџСЂРё РѕРїСЂРµРґРµР»РµРЅРёРё СЃР»РѕРІР°СЂСЏ Р·Р°РґР°С‘С‚ СЃС‚СЂРѕРєРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ РєР»СЋС‡Р°
+	// РґР»СЏ РѕС‡РµСЂРµРґРЅРѕР№ РїР°СЂС‹ РєР»СЋС‡-Р·РЅР°С‡РµРЅРёРµ. РЎР»РµРґСѓСЋС‰РёР№ РІС‹Р·РѕРІ РјРµС‚РѕРґР° РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РґРѕР»Р¶РµРЅ
+	// Р·Р°РґР°РІР°С‚СЊ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РµРµ СЌС‚РѕРјСѓ РєР»СЋС‡Сѓ Р·РЅР°С‡РµРЅРёРµ СЃ РїРѕРјРѕС‰СЊСЋ РјРµС‚РѕРґР° Value РёР»Рё
+	// РЅР°С‡РёРЅР°С‚СЊ РµРіРѕ РѕРїСЂРµРґРµР»РµРЅРёРµ СЃ РїРѕРјРѕС‰СЊСЋ StartDict РёР»Рё StartArray.
+	AfterKey Builder::Key(std::string key) {
+		// РџСЂРѕРІРµСЂРєР° РІС‹Р·РѕРІР° СЃРЅР°СЂСѓР¶Рё СЃР»РѕРІР°СЂСЏ РёР»Рё СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РґСЂСѓРіРѕРіРѕ Key
+		if (node_stack_.empty() && !root_.IsDict()) {
+			throw std::logic_error("\"Key\": newly created object isn't dictionary."s);
+		}
 
-	if (!node_stack_.empty() && !node_stack_.back()->IsDict()) {
-		throw std::logic_error("\"Key\": called ouside of dictionary."s);
-	}
+		if (!node_stack_.empty() && !node_stack_.back()->IsDict()) {
+			throw std::logic_error("\"Key\": called ouside of dictionary."s);
+		}
 
-	if (key_is_entered_) {
-		throw std::logic_error("\"Key\": called after another \"Key\"."s);
-	}
+		if (key_is_entered_) {
+			throw std::logic_error("\"Key\": called after another \"Key\"."s);
+		}
 
-	key_buffer_ = std::move(key);
-	key_is_entered_ = true;
-
-	return { *this };
-}
-
-
-// Задаёт значение, соответствующее ключу при определении словаря, очередной
-// элемент массива или, если вызвать сразу после конструктора json::Builder,
-// всё содержимое конструируемого JSON - объекта.Может принимать как простой
-// объект — число или строку — так и целый массив или словарь.
-// Здесь Node::Value — это синоним для базового класса Node, шаблона variant
-// с набором возможных типов - значений.Смотрите заготовку кода.
-AfterNoLim Builder::Value(Node::Value value) {
-
-	// Проверка, что объект готов: задан root_ и массив создания пуст
-	if (ObjectIsFinished()) {
-		throw std::logic_error("\"Value\": called for finished object."s);
-	}
-
-	if (!CheckCorrectCall()) {
-		throw std::logic_error("\"Value\": called in wrong place."s);
-	}
-
-	// Создание value сразу после конструктора
-	if (ObjectJustCreated()) {
-		root_ = std::move(Node(std::move(value)));
+		key_buffer_ = std::move(key);
+		key_is_entered_ = true;
 
 		return { *this };
 	}
 
-	// Привязка к последнему узлу в node_stack_
-	auto& last_node = *node_stack_.back();
 
-	if (last_node.IsArray()) {
-		// Возврат массива из узла
-		Array buffer_array = last_node.AsArray();
+	// Р—Р°РґР°С‘С‚ Р·РЅР°С‡РµРЅРёРµ, СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РµРµ РєР»СЋС‡Сѓ РїСЂРё РѕРїСЂРµРґРµР»РµРЅРёРё СЃР»РѕРІР°СЂСЏ, РѕС‡РµСЂРµРґРЅРѕР№
+	// СЌР»РµРјРµРЅС‚ РјР°СЃСЃРёРІР° РёР»Рё, РµСЃР»Рё РІС‹Р·РІР°С‚СЊ СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° json::Builder,
+	// РІСЃС‘ СЃРѕРґРµСЂР¶РёРјРѕРµ РєРѕРЅСЃС‚СЂСѓРёСЂСѓРµРјРѕРіРѕ JSON - РѕР±СЉРµРєС‚Р°.РњРѕР¶РµС‚ РїСЂРёРЅРёРјР°С‚СЊ РєР°Рє РїСЂРѕСЃС‚РѕР№
+	// РѕР±СЉРµРєС‚ вЂ” С‡РёСЃР»Рѕ РёР»Рё СЃС‚СЂРѕРєСѓ вЂ” С‚Р°Рє Рё С†РµР»С‹Р№ РјР°СЃСЃРёРІ РёР»Рё СЃР»РѕРІР°СЂСЊ.
+	// Р—РґРµСЃСЊ Node::Value вЂ” СЌС‚Рѕ СЃРёРЅРѕРЅРёРј РґР»СЏ Р±Р°Р·РѕРІРѕРіРѕ РєР»Р°СЃСЃР° Node, С€Р°Р±Р»РѕРЅР° variant
+	// СЃ РЅР°Р±РѕСЂРѕРј РІРѕР·РјРѕР¶РЅС‹С… С‚РёРїРѕРІ - Р·РЅР°С‡РµРЅРёР№.РЎРјРѕС‚СЂРёС‚Рµ Р·Р°РіРѕС‚РѕРІРєСѓ РєРѕРґР°.
+	AfterNoLim Builder::Value(Node::Value value) {
 
-		// Внесение Value в буфферный массив
-		buffer_array.push_back(std::move(Node(std::move(value))));
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ РіРѕС‚РѕРІ: Р·Р°РґР°РЅ root_ Рё РјР°СЃСЃРёРІ СЃРѕР·РґР°РЅРёСЏ РїСѓСЃС‚
+		if (ObjectIsFinished()) {
+			throw std::logic_error("\"Value\": called for finished object."s);
+		}
 
-		// Присвоение нового узла для root_
-		last_node = std::move(Node(std::move(buffer_array)));
+		if (!CheckCorrectCall()) {
+			throw std::logic_error("\"Value\": called in wrong place."s);
+		}
+
+		// РЎРѕР·РґР°РЅРёРµ value СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°
+		if (ObjectJustCreated()) {
+			root_ = std::move(Node(std::move(value)));
+
+			return { *this };
+		}
+
+		// РџСЂРёРІСЏР·РєР° Рє РїРѕСЃР»РµРґРЅРµРјСѓ СѓР·Р»Сѓ РІ node_stack_
+		auto& last_node = *node_stack_.back();
+
+		if (last_node.IsArray()) {
+			// Р’РѕР·РІСЂР°С‚ РјР°СЃСЃРёРІР° РёР· СѓР·Р»Р°
+			Array buffer_array = last_node.AsArray();
+
+			// Р’РЅРµСЃРµРЅРёРµ Value РІ Р±СѓС„С„РµСЂРЅС‹Р№ РјР°СЃСЃРёРІ
+			buffer_array.push_back(std::move(Node(std::move(value))));
+
+			// РџСЂРёСЃРІРѕРµРЅРёРµ РЅРѕРІРѕРіРѕ СѓР·Р»Р° РґР»СЏ root_
+			last_node = std::move(Node(std::move(buffer_array)));
+
+			return { *this };
+		}
+		else if (last_node.IsDict()) {
+			Dict buffer_dict = last_node.AsDict();
+
+			buffer_dict[key_buffer_] = std::move(Node(std::move(value)));
+			//key_buffer_.erase();
+			key_is_entered_ = false;
+
+			last_node = std::move(Node(std::move(buffer_dict)));
+
+			return { *this };
+		}
+		else {
+			throw std::logic_error("\"Value\": incorrect call for not empty node_stack_"s);
+		}
+
+		throw std::logic_error("\"Value\": wasn't added"s);
+	}
+
+	// РќР°С‡РёРЅР°РµС‚ РѕРїСЂРµРґРµР»РµРЅРёРµ СЃР»РѕР¶РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ - СЃР»РѕРІР°СЂСЏ.Р’С‹Р·С‹РІР°РµС‚СЃСЏ РІ С‚РµС… Р¶Рµ РєРѕРЅС‚РµРєСЃС‚Р°С…,
+	// С‡С‚Рѕ Рё Value. РЎР»РµРґСѓСЋС‰РёРј РІС‹Р·РѕРІРѕРј РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Key РёР»Рё EndDict.
+	AfterStartDict Builder::StartDict() {
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ РіРѕС‚РѕРІ: Р·Р°РґР°РЅ root_ Рё РјР°СЃСЃРёРІ СЃРѕР·РґР°РЅРёСЏ РїСѓСЃС‚
+		if (ObjectIsFinished()) {
+			throw std::logic_error("\"StartDict\": called for finished object."s);
+		}
+
+		if (!CheckCorrectCall()) {
+			throw std::logic_error("\"StartDict\": called in wrong place."s);
+		}
+
+		// РЈР·РµР» СЃ РїСѓСЃС‚С‹Рј СЃР»РѕРІР°СЂРµРј
+		Node empty_dict_n(Dict{});
+
+		if (!StartList(std::move(empty_dict_n))) {
+			throw std::logic_error("\"StartDict\": wasn't started"s);
+		}
 
 		return { *this };
 	}
-	else if (last_node.IsDict()) {
-		Dict buffer_dict = last_node.AsDict();
 
-		buffer_dict[key_buffer_] = std::move(Node(std::move(value)));
-		//key_buffer_.erase();
-		key_is_entered_ = false;
+	// РќР°С‡РёРЅР°РµС‚ РѕРїСЂРµРґРµР»РµРЅРёРµ СЃР»РѕР¶РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ - РјР°СЃСЃРёРІР°.Р’С‹Р·С‹РІР°РµС‚СЃСЏ РІ С‚РµС… Р¶Рµ РєРѕРЅС‚РµРєСЃС‚Р°С…,
+	// С‡С‚Рѕ Рё Value.РЎР»РµРґСѓСЋС‰РёРј РІС‹Р·РѕРІРѕРј РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ EndArray РёР»Рё Р»СЋР±РѕР№,
+	// Р·Р°РґР°СЋС‰РёР№ РЅРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ : Value, StartDict РёР»Рё StartArray.
+	AfterStartArray Builder::StartArray() {
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ РіРѕС‚РѕРІ: Р·Р°РґР°РЅ root_ Рё РјР°СЃСЃРёРІ СЃРѕР·РґР°РЅРёСЏ РїСѓСЃС‚
+		if (ObjectIsFinished()) {
+			throw std::logic_error("\"StartArray\": called for finished object."s);
+		}
 
-		last_node = std::move(Node(std::move(buffer_dict)));
+		if (!CheckCorrectCall()) {
+			throw std::logic_error("\"StartArray\": called in wrong place."s);
+		}
+
+		// РЈР·РµР» СЃ РїСѓСЃС‚С‹Рј СЃРїРёСЃРєРѕРј
+		Node empty_array_n(Array{});
+
+
+		if (!StartList(std::move(empty_array_n))) {
+			throw std::logic_error("\"StartArray\": wasn't started"s);
+		}
 
 		return { *this };
 	}
-	else {
-		throw std::logic_error("\"Value\": incorrect call for not empty node_stack_"s);
+
+	// Р—Р°РІРµСЂС€Р°РµС‚ РѕРїСЂРµРґРµР»РµРЅРёРµ СЃР»РѕР¶РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ-СЃР»РѕРІР°СЂСЏ. РџРѕСЃР»РµРґРЅРёРј РЅРµР·Р°РІРµСЂС€С‘РЅРЅС‹Рј
+	// РІС‹Р·РѕРІРѕРј Start* РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ StartDict.
+	AfterNoLim Builder::EndDict() {
+		// Р§С‚Рѕ РѕР±СЉРµРєС‚ РЅРµ С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР·РґР°РЅ
+		if (ObjectJustCreated()) {
+			throw std::logic_error("\"EndDict\": called for empty object"s);
+		}
+
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РєРѕСЂРЅРµРІРѕР№ СѓР·РµР» СЃР»РѕРІР°СЂСЊ, РµСЃР»Рё СЃС‚РµРє РїСѓСЃС‚, РёР»Рё РїРѕСЃР»РµРґРЅРёР№ СѓР·РµР» РІ СЃС‚РµРєРµ - СЃР»РѕРІР°СЂСЊ
+		if ((node_stack_.empty() && !root_.IsDict()) || (!node_stack_.empty() && !node_stack_.back()->IsDict())) {
+			throw std::logic_error("\"EndDict\": called for not dict"s);
+		}
+
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РЅРµС‚ РЅРµР·Р°РїРѕР»РЅРµРЅРЅС‹С… РєР»СЋС‡РµР№
+		if (key_is_entered_) {
+			throw std::logic_error("\"EndDict\": calling after Key"s);
+		}
+
+		// РЈРґР°Р»РµРЅРёРµ СѓР·Р»Р° РёР· СЃС‚РµРєР° Р·Р°РїРѕР»РЅРµРЅРёСЏ
+		node_stack_.pop_back();
+
+		return { *this };
+
 	}
 
-	throw std::logic_error("\"Value\": wasn't added"s);
-}
+	// Р—Р°РІРµСЂС€Р°РµС‚ РѕРїСЂРµРґРµР»РµРЅРёРµ СЃР»РѕР¶РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ-РјР°СЃСЃРёРІР°. РџРѕСЃР»РµРґРЅРёРј РЅРµР·Р°РІРµСЂС€С‘РЅРЅС‹Рј
+	// РІС‹Р·РѕРІРѕРј Start* РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ StartArray.
+	AfterNoLim Builder::EndArray() {
+		// Р§С‚Рѕ РѕР±СЉРµРєС‚ РЅРµ С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР·РґР°РЅ
+		if (ObjectJustCreated()) {
+			throw std::logic_error("\"EndArray\": called for empty object"s);
+		}
 
-// Начинает определение сложного значения - словаря.Вызывается в тех же контекстах,
-// что и Value. Следующим вызовом обязательно должен быть Key или EndDict.
-AfterStartDict Builder::StartDict(){
-	// Проверка, что объект готов: задан root_ и массив создания пуст
-	if (ObjectIsFinished()) {
-		throw std::logic_error("\"StartDict\": called for finished object."s);
+		// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РєРѕСЂРЅРµРІРѕР№ СѓР·РµР» СЃРїРёСЃРѕРє, РµСЃР»Рё СЃС‚РµРє РїСѓСЃС‚, РёР»Рё РїРѕСЃР»РµРґРЅРёР№ СѓР·РµР» РІ СЃС‚РµРєРµ - СЃРїРёСЃРѕРє
+		if ((node_stack_.empty() && !root_.IsArray()) || (!node_stack_.empty() && !node_stack_.back()->IsArray())) {
+			throw std::logic_error("\"EndArray\": called for not dict"s);
+		}
+
+		// РЈРґР°Р»РµРЅРёРµ СѓР·Р»Р° РёР· СЃС‚РµРєР° Р·Р°РїРѕР»РЅРµРЅРёСЏ
+		node_stack_.pop_back();
+
+		// Р—Р°РіР»СѓС€РєР°
+		return { *this };
 	}
 
-	if (!CheckCorrectCall()) {
-		throw std::logic_error("\"StartDict\": called in wrong place."s);
+	// Р’РѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРєС‚ json::Node, СЃРѕРґРµСЂР¶Р°С‰РёР№ JSON, РѕРїРёСЃР°РЅРЅС‹Р№ РїСЂРµРґС‹РґСѓС‰РёРјРё РІС‹Р·РѕРІР°РјРё
+	// РјРµС‚РѕРґРѕРІ. Рљ СЌС‚РѕРјСѓ РјРѕРјРµРЅС‚Сѓ РґР»СЏ РєР°Р¶РґРѕРіРѕ Start* РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІС‹Р·РІР°РЅ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№
+	// End*. РџСЂРё СЌС‚РѕРј СЃР°Рј РѕР±СЉРµРєС‚ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РѕРїСЂРµРґРµР»С‘РЅ, С‚Рѕ РµСЃС‚СЊ РІС‹Р·РѕРІ
+	// json::Builder{}.Build() РЅРµРґРѕРїСѓСЃС‚РёРј.
+	Node Builder::Build() {
+		if (!ObjectIsFinished()) {
+			throw std::logic_error("\"Build\": called for not finished object"s);
+		}
+
+		// Р’РѕР·РІСЂР°С‚ РєРѕСЂРЅРµРІРѕРіРѕ СѓР·Р»Р°
+		return root_;
 	}
 
-	// Узел с пустым словарем
-	Node empty_dict_n(Dict {});
 
-	if (!StartList(std::move(empty_dict_n))) {
-		throw std::logic_error("\"StartDict\": wasn't started"s);
+	// --------- Р‘Р»РѕРє Р»РѕРіРёС‡РµСЃРєРёС… РїСЂРѕРІРµСЂРѕРє СЃРѕСЃС‚РѕСЏРЅРёСЏ ---------
+
+	// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР·РґР°РЅ
+	bool Builder::ObjectJustCreated() {
+		return root_.IsNull() && node_stack_.empty();
 	}
 
-	return { *this };
-}
-
-// Начинает определение сложного значения - массива.Вызывается в тех же контекстах,
-// что и Value.Следующим вызовом обязательно должен быть EndArray или любой,
-// задающий новое значение : Value, StartDict или StartArray.
-AfterStartArray Builder::StartArray(){
-	// Проверка, что объект готов: задан root_ и массив создания пуст
-	if (ObjectIsFinished()) {
-		throw std::logic_error("\"StartArray\": called for finished object."s);
+	// РџСЂРѕРІРµСЂРєР° РіРѕС‚РѕРІРЅРѕСЃС‚Рё РѕР±СЉРµРєС‚Р°
+	bool Builder::ObjectIsFinished() {
+		return !root_.IsNull() && node_stack_.empty();
 	}
 
-	if (!CheckCorrectCall()) {
-		throw std::logic_error("\"StartArray\": called in wrong place."s);
+	// РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РІС‹Р·РѕРІ РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° РёР»Рё РїРѕСЃР»Рµ Key РёР»Рё РїРѕСЃР»Рµ РїСЂРµРґС‹РґСѓС‰РµРіРѕ СЌР»РµРјРµРЅС‚Р° РјР°СЃСЃРёРІР°.
+	bool Builder::CheckCorrectCall() {
+		// РџСЂРѕРІРµСЂРєР° РІС‹Р·РѕРІР° РїРѕСЃР»Рµ РјРµС‚РѕРґР° Key
+		bool after_key = !node_stack_.empty() && node_stack_.back()->IsDict() && key_is_entered_; //!key_buffer_.empty();
+
+		// РџСЂРѕРІРµСЂРєР° РІС‹Р·РѕРІР° РІ Array
+		bool in_array = !node_stack_.empty() && node_stack_.back()->IsArray();
+
+		return ObjectJustCreated() || after_key || in_array;
 	}
 
-	// Узел с пустым списком
-	Node empty_array_n(Array{});
 
+	// РЎРѕР·РґР°РЅРёРµ СѓР·Р»Р° Array/Dict
+	bool Builder::StartList(Node&& node) {
+		// РЎРѕР·РґР°РЅРёРµ node СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°
+		if (ObjectJustCreated()) {
+			root_ = node;
 
-	if (!StartList(std::move(empty_array_n))) {
-		throw std::logic_error("\"StartArray\": wasn't started"s);
+			// Р”РѕР±Р°Р»РµРЅРёРµ СѓРєР°Р·Р°С‚РµР»СЏ РЅР° РєРѕСЂРЅРµРІРѕР№ СѓР·РµР», РґР»СЏ Р±Р»РѕРєРёСЂРѕРІРєРё Build.
+			// Р‘СѓРґРµС‚ СѓРґР°Р»РµРЅ РїСЂРё РІС‹Р·РѕРІРµ End*. Р­С‚Рѕ Р·РЅР°С‡РёС‚, С‡С‚Рѕ node_stack_ РІСЃРµРіРґР° СЃРѕРґРµСЂР¶РёС‚
+			// Р·РЅР°С‡РµРЅРёРµ, РµСЃР»Рё РєРѕРЅСЃС‚СЂСѓРёСЂРѕРІР°РЅРёРµ РЅРµ Р·Р°РІРµСЂС€РµРЅРѕ
+			node_stack_.push_back(&root_);
+
+			return true;
+		}
+
+		// РџСЂРёРІСЏР·РєР° Рє РїРѕСЃР»РµРґРЅРµРјСѓ СѓР·Р»Сѓ РІ node_stack_
+		auto& last_node = *node_stack_.back();
+
+		if (last_node.IsArray()) {
+			// Р’РѕР·РІСЂР°С‚ РјР°СЃСЃРёРІР° РёР· СѓР·Р»Р°
+			Array buffer_array = last_node.AsArray();
+
+			// Р’РЅРµСЃРµРЅРёРµ node РІ Р±СѓС„С„РµСЂРЅС‹Р№ РјР°СЃСЃРёРІ
+			buffer_array.push_back(std::move(node));
+
+			// РџРѕР»СѓС‡РµРЅРёРµ СѓРєР°Р·Р°С‚РµР»СЏ РЅР° СѓР·РµР» СЃРѕ СЃР»РѕРІР°СЂРµРј
+			Node* array_ptr = &buffer_array.back();
+
+			// РџРµСЂРµРЅРѕСЃ СѓР·Р»Р° РІ СЃС‚РµРє
+			node_stack_.push_back(std::move(array_ptr));
+
+			// РџСЂРёСЃРІРѕРµРЅРёРµ РЅРѕРІРѕРіРѕ СѓР·Р»Р° РґР»СЏ root_
+			last_node = std::move(Node(std::move(buffer_array)));
+
+			return true;
+		}
+		else if (last_node.IsDict()) {
+			Dict buffer_dict = last_node.AsDict();
+
+			buffer_dict[key_buffer_] = std::move(node);
+
+			Node* array_ptr = &buffer_dict[key_buffer_];
+			node_stack_.push_back(std::move(array_ptr));
+
+			key_is_entered_ = false;
+
+			last_node = std::move(Node(std::move(buffer_dict)));
+
+			return true;
+		}
+		else {
+			throw std::logic_error("\"StartList\": incorrect call for not empty node_stack_"s);
+		}
+
+		return false;
 	}
 
-	return { *this };
-}
 
-// Завершает определение сложного значения-словаря. Последним незавершённым
-// вызовом Start* должен быть StartDict.
-AfterNoLim Builder::EndDict(){
-	// Что объект не только что создан
-	if (ObjectJustCreated()) {
-		throw std::logic_error("\"EndDict\": called for empty object"s);
+
+
+	// --------- РљР»Р°СЃСЃ AfterNoLim ----------
+
+	AfterKey AfterNoLim::Key(std::string key) {
+		return builder_.Key(key);
 	}
 
-	// Проверка, что корневой узел словарь, если стек пуст, или последний узел в стеке - словарь
-	if ((node_stack_.empty() && !root_.IsDict()) || (!node_stack_.empty() && !node_stack_.back()->IsDict())) {
-		throw std::logic_error("\"EndDict\": called for not dict"s);
+	AfterNoLim AfterNoLim::Value(Node::Value value) {
+		return builder_.Value(value);
 	}
 
-	// Проверка, что нет незаполненных ключей
-	if (key_is_entered_) {
-		throw std::logic_error("\"EndDict\": calling after Key"s);
+	AfterStartDict AfterNoLim::StartDict() {
+		return builder_.StartDict();
 	}
 
-	// Удаление узла из стека заполнения
-	node_stack_.pop_back();
-
-	return { *this };
-
-}
-
-// Завершает определение сложного значения-массива. Последним незавершённым
-// вызовом Start* должен быть StartArray.
-AfterNoLim Builder::EndArray(){
-	// Что объект не только что создан
-	if (ObjectJustCreated()) {
-		throw std::logic_error("\"EndArray\": called for empty object"s);
+	AfterStartArray AfterNoLim::StartArray() {
+		return builder_.StartArray();
 	}
 
-	// Проверка, что корневой узел список, если стек пуст, или последний узел в стеке - список
-	if ((node_stack_.empty() && !root_.IsArray()) || (!node_stack_.empty() && !node_stack_.back()->IsArray())) {
-		throw std::logic_error("\"EndArray\": called for not dict"s);
+	AfterNoLim AfterNoLim::EndDict() {
+		return builder_.EndDict();
 	}
 
-	// Удаление узла из стека заполнения
-	node_stack_.pop_back();
-
-	// Заглушка
-	return { *this };
-}
-
-// Возвращает объект json::Node, содержащий JSON, описанный предыдущими вызовами
-// методов. К этому моменту для каждого Start* должен быть вызван соответствующий
-// End*. При этом сам объект должен быть определён, то есть вызов
-// json::Builder{}.Build() недопустим.
-Node Builder::Build() {
-	if (!ObjectIsFinished()) {
-		throw std::logic_error("\"Build\": called for not finished object"s);
+	AfterNoLim AfterNoLim::EndArray() {
+		return builder_.EndArray();
 	}
 
-	// Возврат корневого узла
-	return root_;
-}
-
-
-// --------- Блок логических проверок состояния ---------
-
-// Проверка, что объект только что создан
-bool Builder::ObjectJustCreated() {
-	return root_.IsNull() && node_stack_.empty();
-}
-
-// Проверка готовности объекта
-bool Builder::ObjectIsFinished() {
-	return !root_.IsNull() && node_stack_.empty();
-}
-
-// Проверка, что вызов после конструктора или после Key или после предыдущего элемента массива.
-bool Builder::CheckCorrectCall() {
-	// Проверка вызова после метода Key
-	bool after_key = !node_stack_.empty() && node_stack_.back()->IsDict() && key_is_entered_; //!key_buffer_.empty();
-
-	// Проверка вызова в Array
-	bool in_array = !node_stack_.empty() && node_stack_.back()->IsArray();
-
-	return ObjectJustCreated() || after_key || in_array;
-}
-
-
-// Создание узла Array/Dict
-bool Builder::StartList(Node&& node) {
-	// Создание node сразу после конструктора
-	if (ObjectJustCreated()) {
-		root_ = node;
-
-		// Добаление указателя на корневой узел, для блокировки Build.
-		// Будет удален при вызове End*. Это значит, что node_stack_ всегда содержит
-		// значение, если конструирование не завершено
-		node_stack_.push_back(&root_);
-
-		return true;
+	Node AfterNoLim::Build() {
+		return builder_.Build();
 	}
 
-	// Привязка к последнему узлу в node_stack_
-	auto& last_node = *node_stack_.back();
 
-	if (last_node.IsArray()) {
-		// Возврат массива из узла
-		Array buffer_array = last_node.AsArray();
+	// Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹С… РєР»Р°СЃСЃРѕРІ РґР»СЏ РѕР±СЂР°Р±РѕС‚РєРё Value
 
-		// Внесение node в буфферный массив
-		buffer_array.push_back(std::move(node));
-
-		// Получение указателя на узел со словарем
-		Node* array_ptr = &buffer_array.back();
-
-		// Перенос узла в стек
-		node_stack_.push_back(std::move(array_ptr));
-
-		// Присвоение нового узла для root_
-		last_node = std::move(Node(std::move(buffer_array)));
-
-		return true;
-	}
-	else if (last_node.IsDict()) {
-		Dict buffer_dict = last_node.AsDict();
-
-		buffer_dict[key_buffer_] = std::move(node);
-
-		Node* array_ptr = &buffer_dict[key_buffer_];
-		node_stack_.push_back(std::move(array_ptr));
-
-		key_is_entered_ = false;
-
-		last_node = std::move(Node(std::move(buffer_dict)));
-
-		return true;
-	}
-	else {
-		throw std::logic_error("\"StartList\": incorrect call for not empty node_stack_"s);
+	AfterKeyValue AfterKey::Value(Node::Value value) {
+		return { builder_.Value(value) };
 	}
 
-	return false;
-}
+	AfterArrayValue AfterStartArray::Value(Node::Value value) {
+		return { builder_.Value(value) };
+	}
 
-
-
-
-// --------- Класс AfterNoLim ----------
-
-AfterKey AfterNoLim::Key(std::string key) {
-	return builder_.Key(key);
-}
-
-AfterNoLim AfterNoLim::Value(Node::Value value) {
-	return builder_.Value(value);
-}
-
-AfterStartDict AfterNoLim::StartDict() {
-	return builder_.StartDict();
-}
-
-AfterStartArray AfterNoLim::StartArray() {
-	return builder_.StartArray();
-}
-
-AfterNoLim AfterNoLim::EndDict() {
-	return builder_.EndDict();
-}
-
-AfterNoLim AfterNoLim::EndArray() {
-	return builder_.EndArray();
-}
-
-Node AfterNoLim::Build() {
-	return builder_.Build();
-}
-
-
-// Вспомогательные методы вспомогательных классов для обработки Value
-
-AfterKeyValue AfterKey::Value(Node::Value value) {
-	return { builder_.Value(value) };
-}
-
-AfterArrayValue AfterStartArray::Value(Node::Value value) {
-	return { builder_.Value(value) };
-}
-
-AfterArrayValue AfterArrayValue::Value(Node::Value value) {
-	return { builder_.Value(value) };
-}
+	AfterArrayValue AfterArrayValue::Value(Node::Value value) {
+		return { builder_.Value(value) };
+	}
 
 
 

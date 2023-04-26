@@ -1,108 +1,54 @@
-#include "transport_catalogue.h"
+п»ї#include "transport_catalogue.h"
+#include "transport_router.h"
+
 #include "json_reader.h"
 #include "map_renderer.h"
-
 #include "json_builder.h"
-#include <iostream>
 
+#include "request_handler.h"
+
+#include <iostream>
 #include <fstream>
 
 
 using namespace std;
 
 int main() {
+	/*
+	* РџСЂРёРјРµСЂРЅР°СЏ СЃС‚СЂСѓРєС‚СѓСЂР° РїСЂРѕРіСЂР°РјРјС‹:
+	* - РЎС‡РёС‚Р°С‚СЊ JSON РёР· stdin
+	* - РџРѕСЃС‚СЂРѕРёС‚СЊ РЅР° РµРіРѕ РѕСЃРЅРѕРІРµ JSON Р±Р°Р·Сѓ РґР°РЅРЅС‹С… С‚СЂР°РЅСЃРїРѕСЂС‚РЅРѕРіРѕ СЃРїСЂР°РІРѕС‡РЅРёРєР°
+	* - Р’С‹РїРѕР»РЅРёС‚СЊ Р·Р°РїСЂРѕСЃС‹ Рє СЃРїСЂР°РІРѕС‡РЅРёРєСѓ, РЅР°С…РѕРґСЏС‰РёРµСЃСЏ РІ РјР°СЃСЃРёРІРµ "stat_requests", РїРѕСЃС‚СЂРѕРёРІ JSON-РјР°СЃСЃРёРІ
+	*   СЃ РѕС‚РІРµС‚Р°РјРё.
+	* - Р’С‹РІРµСЃС‚Рё РІ stdout РѕС‚РІРµС‚С‹ РІ РІРёРґРµ JSON
+	*/
 
-    // Вход в проверку json_builder
-    /*
-    {
-        try {
-            json::Print(
-                json::Document{
-                    json::Builder{}
-                    .StartDict()
-                        .Key("key1"s).Value(123)
-                        .Key("key2"s).Value("value2"s)
-                        .Key("key3"s).StartArray()
-                            .Value(456)
-                            .StartDict().EndDict()
-                            .StartDict()
-                                .Key(""s)
-                                .Value(nullptr)
-                            .EndDict()
-                            .Value(""s)
-                        .EndArray()
-                    .EndDict()
-                    .Build()
-                },
-                std::cout
-            );
-            std::cout << endl;
+	// Р§С‚РµРЅРёРµ С„Р°Р№Р»Р° json Рё С„РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р±Р°Р·С‹ Р·Р°РїСЂРѕСЃРѕРІ
+	json_reader::InputQueries queries = json_reader::ReadTransportJson(cin);
 
-        }
-        catch (std::exception const& ex) {
-            std::cout << ex.what();
-        }
+	// Р‘Р°Р·Р° СЃ РјР°СЂС€СЂСѓС‚Р°РјРё
+	transport_catalogue::TransportCatalogue catalogue;
+	catalogue.FillCatalogue(queries.stops_to_add, queries.buses_to_add);
 
-        json::Print(
-            json::Document{
-                json::Builder{}
-                .Value("just a string"s)
-                .Build()
-            },
-            std::cout
-        );
-        std::cout << "\n"s << endl;
+	// Р“СЂР°С„ СЃ РјР°СЂС€СЂСѓС‚Р°РјРё
+	graph::DirectedWeightedGraph<double> graph(catalogue.GetStopList().size() + 1);
 
+	// РћР±СЂР°Р±РѕС‚С‡РёРє РјР°СЂС€СЂСѓС‚РѕРІ СЃРѕ РІСЃС‚СЂРѕРµРЅРЅС‹Рј РіСЂР°С„РѕРј РјР°СЂС€СЂСѓС‚РѕРІ
+	transport_router::TransportRouter transport_router(catalogue, queries.routing_settings);
+	transport_router.FillGraph();
 
-        //json::Builder{}.StartDict().Build();  // правило 3
-        //json::Builder{}.StartDict().Key("1"s).Value(1).Value(1);  // правило 2
-        //json::Builder{}.StartDict().Key("1"s).Key(""s);  // правило 1
-        //json::Builder{}.StartArray().Key("1"s);  // правило 4
-        //json::Builder{}.StartArray().EndDict();  // правило 4
-        //json::Builder{}.StartArray().Value(1).Value(2).EndDict();  // правило 5 
-    }
-    */
+	// РћР±СЂР°Р±РѕС‚С‡РёРє РіСЂР°С„Р° РјР°СЂС€СЂСѓС‚РѕРІ
+	graph::Router<double> router(transport_router.GetGraph());
 
-    // Точка входа в справочник
-    {
-        /*
-        * Примерная структура программы:
-        *
-        * Считать JSON из stdin
-        * Построить на его основе JSON базу данных транспортного справочника
-        * Выполнить запросы к справочнику, находящиеся в массиве "stat_requests", построив JSON-массив
-        * с ответами.
-        * Вывести в stdout ответы в виде JSON
-        */
+	// РћС‚СЂРёСЃРѕРІС‰РёРє РєР°СЂС‚С‹ РјР°СЂС€СЂСѓС‚РѕРІ РІ С„РѕСЂРјР°С‚Рµ SVG
+	map_renderer::MapRenderer renderer(queries.render_settings);
 
-        // обработка запросов из json
-        transport_catalogue::TransportCatalogue db;
+	// РћР±СЂР°Р±РѕС‚С‡РёРє Р·Р°РїСЂРѕСЃРѕРІ
+	request_handler::RequestHandler request_handler(catalogue, renderer, transport_router, router);
 
-        // Отрисовка карты маршрутов
-        map_renderer::MapRenderer renderer;
-
-        // Открытие файла для чтения
-        //ifstream fin("input.json"s);
-
-        // Открытие файла для записи
-        //ofstream fout("output.json"s);
-
-        json_reader::ReadJson(db, renderer, cin, cout);
-
-        // Закрыли файл
-        //fin.close();
-
-        // Закрыли файл
-        //fout.close();
-
-    }
-
-
-
-
-
-
-
+	// Р’С‹РІРѕРґ Р·Р°РїСЂРѕСЃРѕРІ РІ С„РѕСЂРјР°С‚Рµ json
+	json::Document json_responce = request_handler.GetJsonResponce(queries.requests);
+	json::Print(json_responce, cout);
 
 
 }

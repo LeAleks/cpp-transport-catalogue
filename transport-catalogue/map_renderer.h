@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "svg.h"
 #include "geo.h"
@@ -59,7 +59,7 @@ struct RenderSettings {
     // Толщина подложки под названиями остановок и маршрутов.
     // Задаёт значение атрибута stroke-width элемента <text>
     double underlayer_width = 0.0;
-    
+
     // Цвета в палитре
     std::vector<svg::Color> color_pallete;
 };
@@ -154,7 +154,7 @@ public:
     MapRenderer() = default;
 
     MapRenderer(RenderSettings& settings)
-        : settings_(settings){}
+        : settings_(settings) {}
 
     MapRenderer(MapRenderer& other) {
         settings_ = other.settings_;
