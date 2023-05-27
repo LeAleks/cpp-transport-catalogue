@@ -5,7 +5,10 @@
 #include "map_renderer.h"
 #include "transport_router.h"
 
+#include "serialization.h"
+
 #include <deque>
+#include <string>
 
 /*
  * Здесь можно разместить код наполнения транспортного справочника данными из JSON,
@@ -19,6 +22,8 @@ struct InputQueries{
 	std::deque<transport_catalogue::RequestInfo> requests;
 	map_renderer::RenderSettings render_settings;
 	transport_router::RoutingSettings routing_settings;
+	// serialization_settings
+	serialization::Settings ser_settings;
 };
 
 // Чтение json для транспортного каталога

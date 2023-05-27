@@ -166,51 +166,48 @@ optional<transport_router::RouteResponce> RequestHandler::GetRoute(std::string_v
 	const transport_router::RoutingSettings routing_settings = transport_router_.GetRoutingSettings();
 
 	// Получение VertexId остановок
-	graph::VertexId idx_stop_from = transport_router_.GetVertexId(stop_from);
-	graph::VertexId idx_stop_to = transport_router_.GetVertexId(stop_to);
+	graph::VertexId vertex_id_from = transport_router_.GetVertexId(stop_from);
+	graph::VertexId vertex_id_to = transport_router_.GetVertexId(stop_to);
 
 	// Возврат информации о кратчайшем маршруте из маршрутизатора
-	optional<graph::Router<double>::RouteInfo> route_info = router_.BuildRoute(idx_stop_from, idx_stop_to);
+	optional<graph::Router<double>::RouteInfo> route_info = router_.BuildRoute(vertex_id_from, vertex_id_to);
 
 	if (route_info == nullopt) {
 		return nullopt;
 	}
 
-	transport_router::RouteResponce result;
-
 	// Получение ссылки на список ребер маршрута
 	const vector<graph::EdgeId>& edges_list = route_info.value().edges;
 
-	double total_route_time = 0.0;
+	transport_router::RouteResponce result;
 
+	// Если список пуст, то начало и конец одна и та же остановка
 	if (edges_list.empty()) {
 		result.total_time = 0.0;
 		return result;
 	}
-	
+
 	for (const auto& edge_id : edges_list) {
 		// Возврат информации о текущем ребре
-		transport_router::EdgeInfo edge_info = transport_router_.GetEdgeInfo(edge_id);
+		const transport_router::EdgeInfo& edge_info = transport_router_.GetEdgeInfo(edge_id);
 
-		// Создание узла ожидания автобуса
+		// Создание узла ожидания автобуса - остановки
 		transport_router::RouteElement wait_elem;
-		wait_elem.stop_name = edge_info.stop_from;
+		wait_elem.stop_name = edge_info.start;
 		wait_elem.time = routing_settings.bus_wait_time;
 		wait_elem.type = "Wait"s;
 		result.items.push_back(move(wait_elem));
 
 		// Создание узла поездки на автобусе
 		transport_router::RouteElement ride_elem;
-		ride_elem.time = edge_info.travel_time - routing_settings.bus_wait_time;
-		ride_elem.type = "Bus"s;
-		ride_elem.bus_name = edge_info.bus->name_;
+		ride_elem.bus_name = edge_info.bus_name;
 		ride_elem.span_count = edge_info.span_count;
+		ride_elem.time = transport_router_.GetRunTime(edge_id);
+		ride_elem.type = "Bus"s;
 		result.items.push_back(move(ride_elem));
-
-		total_route_time += edge_info.travel_time;
 	}
 
-	result.total_time = total_route_time;
+	result.total_time = transport_router_.GetDistance(route_info.value());
 	result.bus_wait_time = routing_settings.bus_wait_time;
 
 	return result;
@@ -231,15 +228,14 @@ svg::Document RequestHandler::RenderMap() const{
 // Обработка списка запросов
  json::Document RequestHandler::GetJsonResponce(const std::deque<RequestInfo>& request_list) {
 	
-	 // Создаем корневой массив для вывода
-	 json::Array response_output;
+	// Создаем корневой массив для вывода
+	json::Array response_output;
 
-	 response_output.reserve(request_list.size());
+	response_output.reserve(request_list.size());
 
-
+	 
 	for (auto& request : request_list) {
 		string_view request_type = request.request_items.at("type"s);
-
 		if (request_type == "Stop"sv){
 			const auto buses_list = GetBusesByStop(request.request_items.at("name"s));
 			json::Node stop_result = details::GenerateStopResult(request.id, buses_list);

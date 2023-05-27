@@ -32,12 +32,15 @@ struct RouteResponce {
 };
 
 struct EdgeInfo {
-	const transport_catalogue::Bus* bus;
-	int span_count{};
-	int distance{};
-	double travel_time{};
-	std::string_view stop_from;
+	std::string bus_name;
+	std::string start;
+	std::string finish;
+	int span_count = 0;
 };
+
+
+// Переделка класса для оптимизации алгоритма заполения графа
+
 
 class TransportRouter {
 public:
@@ -45,8 +48,8 @@ public:
 
 	void SetRoutingSettings(RoutingSettings& settings);
 
-	// Загрузка информации из базы и заполение графа
-	void FillGraph();
+	// Получение свойств движения автобусов
+	RoutingSettings GetRoutingSettings() const;
 
 	// Получение ссылки на граф
 	const graph::DirectedWeightedGraph<double>& GetGraph();
@@ -57,26 +60,26 @@ public:
 	// Получение VertexId по названию остановки
 	graph::VertexId GetVertexId(std::string_view stop_name) const;
 
-	// Получение свойств движения автобусов
-	RoutingSettings GetRoutingSettings() const;
+	// Получение времени перемещения между остановками
+	double GetRunTime(graph::EdgeId id) const;
+
+	// Метод возвращает значение длины ребра в double, вытаскивая его из 
+	// шаблонной структуры RouteInfo
+	double GetDistance(const graph::Router<double>::RouteInfo& info) const;
 
 private:
 	graph::DirectedWeightedGraph<double> graph_;
 	const transport_catalogue::TransportCatalogue& catalogue_;
 	RoutingSettings routing_settings_;
 
-	// Список остановок с присвоенным VertexId для каждой
-	std::unordered_map<std::string_view, graph::VertexId> stops_vertex_id_;
-	std::unordered_map<graph::EdgeId, EdgeInfo> edgeID_to_edge_info_;
+	std::unordered_map<std::string_view, graph::VertexId> stop_name_to_vertex_id_;
+	std::unordered_map<graph::EdgeId, EdgeInfo> edge_id_to_edge_info_;
 
-	// Хеш функция для работы с парой VertexId
-	struct HasherVertexId {
-		size_t operator()(const std::pair<graph::VertexId, graph::VertexId>& stop_names) const {
-			return size_t(stop_names.first) + 211 * size_t(stop_names.second);
-		}
-	};
+	// Присвоение VertexId остановкам из каталога
+	void SetStopVertexId();
 
-	std::unordered_map<std::pair<graph::VertexId, graph::VertexId>, int, HasherVertexId> pair_idx_to_distance_;
+	// Заполение графа маршрутами
+	void SetRoutesToGraph();
 };
 
 

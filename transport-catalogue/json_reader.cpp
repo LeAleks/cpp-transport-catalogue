@@ -204,10 +204,10 @@ InputQueries ReadTransportJson(std::istream& input) {
 		// Парсинг парметров
 		result.render_settings = details::GetRenderSettings(render_settings_ptr);
 	}
-
+	
 	// Проверка, что есть запросы типа routing_settings
 	if (command_list.count("routing_settings"s) != 0) {
-		// Указатель на массив с route_settings
+		// Указатель на словарь с route_settings
 		auto& route_settings_dict = command_list.at("routing_settings"s).AsDict();
 
 		// Парсинг парметров
@@ -223,6 +223,13 @@ InputQueries ReadTransportJson(std::istream& input) {
 		result.requests = details::GetRequestsList(stat_requests_array);
 
 		// Вывод данных в формате json
+	}
+
+	// Проверка, что есть запросы типа serialization_settings
+	if (command_list.count("serialization_settings"s) != 0) {
+		// Указатель на словарь с stat_requests
+		auto& serialization_settings_dict = command_list.at("serialization_settings"s).AsDict();
+		result.ser_settings.file_name = serialization_settings_dict.at("file"s).AsString();
 	}
 	
 	return result;

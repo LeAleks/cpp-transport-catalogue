@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package serialization;
+
+import "svg.proto";
+
+message PointOffset{
+    double dx = 1;
+    double dy = 2;
+}
+
+message RenderSettings{
+    double width = 1;
+    double height = 2;
+    double padding = 3;
+    double stop_radius = 4;
+    double line_width = 5;
+    int32 bus_label_font_size = 6;
+    PointOffset bus_label = 7;
+    int32 stop_label_font_size = 8;
+    PointOffset stop_label = 9;
+    Color underlayer_color = 11;
+    double underlayer_width = 12;
+    repeated Color color_pallete = 13;
+}

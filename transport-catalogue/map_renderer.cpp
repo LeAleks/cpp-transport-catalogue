@@ -1,6 +1,6 @@
 ﻿#include "map_renderer.h"
 
-
+#include <iostream>
 
 
 /*
@@ -29,6 +29,7 @@ namespace map_renderer {
 
     svg::Document MapRenderer::GenerateMap(
         const std::vector<const transport_catalogue::Bus*>& bus_list) const {
+
         // Хранилище на указатели координат
         std::deque<geo::Coordinates> coordinates_list;
 
@@ -64,10 +65,12 @@ namespace map_renderer {
 
         // Проходим по списку маршрутов для отрисовки линий
         for (auto& bus : bus_list) {
+
             // Если на маршруте нет остановок, то пропускаем
             if (bus->stops_.empty()) {
                 continue;
             }
+
             // Добавление линии маршрута
             bus_lines.push_back(CreatePolyline(map_converter, bus, color_counter));
 
@@ -106,7 +109,6 @@ namespace map_renderer {
         }
 
         // Объединяем данные в один документ
-
         for (auto& line : bus_lines) {
             result.Add(line);
         }
@@ -139,7 +141,6 @@ namespace map_renderer {
 
         // Определение цвета линии
         route.SetStrokeColor(settings_.color_pallete[color_counter]);
-
         route.SetFillColor(svg::NoneColor);
         route.SetStrokeWidth(settings_.line_width);
         route.SetStrokeLineCap(svg::StrokeLineCap::ROUND);

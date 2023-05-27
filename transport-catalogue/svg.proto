@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package serialization;
+
+message Rgb {
+    int32 r = 1;
+    int32 g = 2;
+    int32 b = 3;
+}
+
+message Rgba {
+    int32 r = 1;
+    int32 g = 2;
+    int32 b = 3;
+    double a = 4;
+}
+
+message Color{
+    int32 color_type = 1;
+    string str_color = 2;
+    Rgb rgb_color = 3;
+    Rgba rgba_color = 4;
+}
